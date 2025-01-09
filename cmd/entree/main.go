@@ -39,7 +39,7 @@ func main() {
 			zap.L().Error("could not get Domain64 for FQDN", zap.String("fqdn", fqdn))
 		} else {
 			zap.L().Debug("inserting fqdn/d64 to hosts", zap.String("fqdn", fqdn), zap.Int64("d64", d64))
-			JDB.WorkDBQueries.UpsertUniqueHost(context.Background(),
+			_, err := JDB.WorkDBQueries.UpsertUniqueHost(context.Background(),
 				work_db.UpsertUniqueHostParams{
 					Domain64: pgtype.Int8{
 						Valid: true,
@@ -51,6 +51,10 @@ func main() {
 						Time:             time.Now().Add(30 * 24 * time.Hour),
 					},
 				})
+
+			if err != nil {
+				zap.L().Error("error upserting domain64 value", zap.Int64("domain64", d64))
+			}
 		}
 	}
 
@@ -63,6 +67,8 @@ func main() {
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))
 	// Local and Cloud should both get this from the environment.
-	http.ListenAndServe(":"+env.Env.Port, engine)
-
+	err := http.ListenAndServe(":"+env.Env.Port, engine)
+	if err != nil {
+		zap.Error(err)
+	}
 }

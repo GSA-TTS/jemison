@@ -18,9 +18,6 @@ import (
 // One pool of connections for River.
 // The work client, doing the work of `extract`
 
-var packClient *river.Client[pgx.Tx]
-var packPool *pgxpool.Pool
-
 type ExtractWorker struct {
 	river.WorkerDefaults[common.ExtractArgs]
 }
@@ -33,7 +30,6 @@ func InitializeQueues() {
 
 	var err error
 	ctx, extractPool, workers := common.CommonQueueInit()
-	_, packPool, _ = common.CommonQueueInit()
 
 	zap.L().Debug("initialized common queues")
 

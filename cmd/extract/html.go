@@ -111,7 +111,12 @@ func extractHtml(obj *kv.S3JSON) {
 	raw_key := obj.Key.Copy()
 	raw_key.Extension = util.Raw
 	zap.L().Debug("looking up raw key", zap.String("raw_key", raw_key.Render()))
-	s3.S3ToFile(raw_key, rawFilename)
+	err := s3.S3ToFile(raw_key, rawFilename)
+	if err != nil {
+		zap.L().Error("could not create tempfile from s3",
+			zap.String("raw_key", raw_key.Render()),
+			zap.String("rawfile", rawFilename))
+	}
 	rawFile, err := os.Open(rawFilename)
 	if err != nil {
 		zap.L().Error("cannot open tempfile", zap.String("filename", rawFilename))
@@ -159,7 +164,11 @@ func extractHtml(obj *kv.S3JSON) {
 	}
 	new_obj.Set("headers", string(jsonString))
 	new_obj.Set("body", content)
-	new_obj.Save()
+	err = new_obj.Save()
+
+	if err != nil {
+		zap.L().Error("could not save object", zap.String("key", new_obj.Key.Render()))
+	}
 
 	// Enqueue next steps
 	ChQSHP <- queueing.QSHP{

@@ -54,7 +54,11 @@ func chunkwiseSHA1(filename string) []byte {
 		}
 		chunk := buf[0:n]
 		// https://pkg.go.dev/crypto/sha1#example-New
-		io.Writer.Write(h, chunk)
+		_, err = io.Writer.Write(h, chunk)
+		if err != nil {
+			zap.L().Error("did not write SHA bytes successfully",
+				zap.Int("h.Size", h.Size()), zap.String("chunk", string(chunk)))
+		}
 	}
 
 	return h.Sum(nil)
@@ -167,7 +171,12 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 
 	// Stream that file over to S3
 	s3 := kv.NewS3(ThisServiceName)
-	s3.FileToS3(key, tempFilename, util.GetMimeType(contentType))
+	err = s3.FileToS3(key, tempFilename, util.GetMimeType(contentType))
+	if err != nil {
+		zap.L().Error("could not send file to S3",
+			zap.String("key", key.Render()),
+			zap.String("tempFilename", tempFilename))
+	}
 
 	response := make(map[string]string)
 	// Copy in all of the response headers.

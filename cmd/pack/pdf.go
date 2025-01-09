@@ -67,5 +67,9 @@ func packPdf(s3json *kv.S3JSON) {
 			Tag:     "body",
 			Content: s3json.GetString("content"),
 		})
-
+	if err != nil {
+		zap.L().Error("could not insert raw content",
+			zap.Int64("domain64", d64),
+			zap.String("path", s3json.GetString("path")))
+	}
 }

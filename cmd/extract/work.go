@@ -51,8 +51,12 @@ func (w *ExtractWorker) Work(ctx context.Context, job *river.Job[common.ExtractA
 		util.ToScheme(job.Args.Scheme),
 		job.Args.Host,
 		job.Args.Path)
-	s3json.Load()
-
+	err := s3json.Load()
+	if err != nil {
+		zap.L().Error("could not load s3 JSON",
+			zap.String("host", job.Args.Host),
+			zap.String("path", job.Args.Path))
+	}
 	extract(s3json)
 
 	zap.L().Debug("extraction finished")

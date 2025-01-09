@@ -24,6 +24,8 @@ func main() {
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))
 	// Local and Cloud should both get this from the environment.
-	http.ListenAndServe(":"+env.Env.Port, routers)
-
+	err := http.ListenAndServe(":"+env.Env.Port, routers)
+	if err != nil {
+		zap.Error(err)
+	}
 }

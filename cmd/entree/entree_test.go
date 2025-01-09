@@ -167,9 +167,13 @@ func TestSetGuestbookFetchToYesterdayForHost2(t *testing.T) {
 	defer conn.Close(ctx)
 
 	// Delete everything from the guestbook for this test.
-	conn.Exec(ctx, "TRUNCATE guestbook")
+	_, err := conn.Exec(ctx, "TRUNCATE guestbook")
 
-	_, err := conn.Exec(ctx,
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = conn.Exec(ctx,
 		`INSERT INTO guestbook
 		(scheme, domain64, path, last_updated, last_fetched, next_fetch)
 		VALUES ($1, $2, $3, $4, $5, $6)

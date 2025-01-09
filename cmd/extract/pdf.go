@@ -20,8 +20,12 @@ func extractPdf(obj *kv.S3JSON) {
 	// s3 := kv.NewS3(ThisServiceName)
 	raw_copy := obj.Key.Copy()
 	raw_copy.Extension = util.Raw
-	obj.S3.S3ToFile(raw_copy, tempFilename)
-
+	err := obj.S3.S3ToFile(raw_copy, tempFilename)
+	if err != nil {
+		zap.L().Error("could not copy s3 object to file",
+			zap.String("raw_copy", raw_copy.Render()),
+			zap.String("tempFilename", tempFilename))
+	}
 	defer func() {
 		err := os.Remove(tempFilename)
 		if err != nil {
@@ -80,7 +84,11 @@ func extractPdf(obj *kv.S3JSON) {
 				obj.Key.Path,
 				obj.GetJSON(),
 			)
-			new_obj.Save()
+			err = new_obj.Save()
+			if err != nil {
+				zap.L().Error("could not save object to s3",
+					zap.String("key", new_obj.Key.Render()))
+			}
 			page.Close()
 			// e.Stats.Increment("page_count")
 

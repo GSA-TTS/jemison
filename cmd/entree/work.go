@@ -22,7 +22,7 @@ func (w *EntreeWorker) Work(ctx context.Context, job *river.Job[common.EntreeArg
 	// !fullCrawl & !pass: check
 	// !fullCrawl & pass: fetch the page now
 
-	kind := "NOT_VALID_KIND"
+	var kind string
 	if job.Args.FullCrawl {
 		kind = "full"
 	} else {

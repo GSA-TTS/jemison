@@ -8,6 +8,7 @@ import (
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/postgres"
 	"github.com/GSA-TTS/jemison/internal/queueing"
+	"go.uber.org/zap"
 )
 
 var ThisServiceName = "pack"
@@ -34,5 +35,8 @@ func main() {
 	go queueing.ClearCompletedPeriodically()
 
 	// Local and Cloud should both get this from the environment.
-	http.ListenAndServe(":"+env.Env.Port, engine)
+	err := http.ListenAndServe(":"+env.Env.Port, engine)
+	if err != nil {
+		zap.Error(err)
+	}
 }

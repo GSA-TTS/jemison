@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"math/rand/v2"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -57,10 +56,6 @@ func InfoFetchCount() {
 		ndx = (ndx + 1) % len(recent)
 		last = cnt
 	}
-}
-
-func randRange(min, max int) int64 {
-	return int64(rand.IntN(max-min)) + int64(min)
 }
 
 func stripHostToAscii(host string) string {

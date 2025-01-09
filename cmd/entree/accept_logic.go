@@ -82,7 +82,7 @@ func EvaluateEntree(ec *EntreeCheck) {
 		// Fetch will update a second time.
 		scheme := JDB.GetScheme(ec.Scheme)
 		next_fetch := JDB.GetNextFetch(ec.Host)
-		JDB.WorkDBQueries.UpdateGuestbookNextFetch(context.Background(),
+		_, err := JDB.WorkDBQueries.UpdateGuestbookNextFetch(context.Background(),
 			work_db.UpdateGuestbookNextFetchParams{
 				Scheme:   scheme,
 				Domain64: ec.Domain64,
@@ -94,6 +94,11 @@ func EvaluateEntree(ec *EntreeCheck) {
 				},
 			},
 		)
+
+		if err != nil {
+			zap.L().Error("failed to update guestbook next fetch",
+				zap.Int64("domain64", ec.Domain64), zap.String("path", ec.Path))
+		}
 
 		ChQSHP <- queueing.QSHP{
 			Queue:  "fetch",

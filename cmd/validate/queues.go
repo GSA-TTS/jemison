@@ -15,9 +15,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// GLOBAL TO THE APP
-var insertClient *river.Client[pgx.Tx]
-
 type FetchWorker struct {
 	river.WorkerDefaults[common.FetchArgs]
 }
@@ -77,13 +74,4 @@ func (w ValidateFetchWorker) Work(ctx context.Context, job *river.Job[common.Val
 func InitializeQueues() {
 	queueing.InitializeRiverQueues()
 	initX(ThisServiceName, common.ValidateFetchQueue, ValidateFetchWorker{})
-
-	// Insert-only client
-	_, pool, _ := common.CommonQueueInit()
-	ic, err := river.NewClient(riverpgxv5.New(pool), &river.Config{})
-	if err != nil {
-		zap.L().Error("could not establish insert-only client")
-		os.Exit(1)
-	}
-	insertClient = ic
 }
