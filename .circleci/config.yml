@@ -5,8 +5,14 @@ version: 2.1
 jobs:
   install:
     docker:
-      # Build against the CF image, for libc compatibiltiy reasons.
-      - image: cloudfoundry/cflinuxfs4:latest
+      # We could build against teh cflinux4 image.
+      # However, we'll try using the default Ubuntu image, 
+      # but we could run into libc compatibility problems.
+      # https://hub.docker.com/r/cloudfoundry/cflinuxfs4/tags
+      # - image: cloudfoundry/cflinuxfs4:latest
+      # We'll try a go image. That may, or may not,
+      # build a binary that plays well with CF/CGov.
+      - image: cimg/go:1.23.3
     steps:
       # Checkout the code as the first step.
       - checkout
@@ -16,16 +22,17 @@ jobs:
       - run: |
             sudo apt-get update
             sudo apt-get -y install < .circleci/build-packages.txt
-      - run: |
-            rm -rf /usr/local/go
-            wget https://go.dev/dl/go1.23.3.linux-amd64.tar.gz
-            tar -C /usr/local -xzf go1.23.3.linux-amd64.tar.gz
+      # - run: |
+      #       rm -rf /usr/local/go
+      #       wget https://go.dev/dl/go1.23.3.linux-amd64.tar.gz
+      #       tar -C /usr/local -xzf go1.23.3.linux-amd64.tar.gz
       - run: |
             wget https://downloads.sqlc.dev/sqlc_1.27.0_linux_amd64.tar.gz
             tar xvzf sqlc_1.27.0_linux_amd64.tar.gz
             chmod 755 sqlc
             mv sqlc /bin/sqlc
       - run: |
+            # PATH=$PATH:/usr/local/go/bin:/root/go/bin
             go install golang.org/x/tools/cmd/goimports@latest
             go install golang.org/x/tools/cmd/stringer@latest
             go install github.com/google/go-jsonnet/cmd/jsonnet@latest
