@@ -1,0 +1,8 @@
+build-essential
+curl
+libpoppler-dev
+libpoppler-glib-dev
+poppler-utils
+software-properties-common
+tree
+wget
