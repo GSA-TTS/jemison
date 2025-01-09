@@ -9,12 +9,11 @@ clean:
 	rm -f cmd/*/service.exe
 
 .PHONY: generate
-generate:
+generate: config
 	cd internal/postgres ; make generate
-	# cd internal/postgres/search_db ; make generate
 
 .PHONY: config
-config:
+config: clean
 	cd config ; make all || exit 1
 
 docker: 
@@ -23,7 +22,7 @@ docker:
 
 .PHONY: build
 # lint
-build: clean config generate 
+build: generate 
 	echo "build migrate"
 	cd cmd/migrate ; make build
 	echo "build admin"

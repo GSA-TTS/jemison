@@ -28,20 +28,24 @@ commands:
           command: |
             curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
             sh -s -- -b /usr/local/go/bin v<< parameters.version >>
-      - run: |
+      - run: 
+          name: "install jsonnet"
+          command: |
             go install golang.org/x/tools/cmd/goimports@latest
             go install golang.org/x/tools/cmd/stringer@latest
             go install github.com/google/go-jsonnet/cmd/jsonnet@latest
             go install github.com/google/go-jsonnet/cmd/jsonnet-lint@latest
             go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest
-      - run: |
+      - run: 
+          name: "install sqlc"
+          command: |
             wget https://downloads.sqlc.dev/sqlc_1.27.0_linux_amd64.tar.gz
             tar xvzf sqlc_1.27.0_linux_amd64.tar.gz
             chmod 755 sqlc
             sudo mv sqlc /bin/sqlc
 jobs:
   lint:
-    docker: &gobase
+    docker:
       - image: cimg/go:1.23.3
     steps:
       - checkout
@@ -56,7 +60,8 @@ jobs:
           command: golangci-lint run
 
   setup-and-build:
-    docker: *gobase
+    docker:
+      - image: cimg/go:1.23.3
     steps:
       # Checkout the code as the first step.
       - checkout
