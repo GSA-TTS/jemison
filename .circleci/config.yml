@@ -3,16 +3,25 @@
 version: 2.1
 
 jobs:
-  setup-and-build:
-    docker:
-      # We could build against the cflinux4 image.
-      # However, we'll try using the default Ubuntu image, 
-      # but we could run into libc compatibility problems.
-      # https://hub.docker.com/r/cloudfoundry/cflinuxfs4/tags
-      # - image: cloudfoundry/cflinuxfs4:latest
-      # We'll try a go image. That may, or may not,
-      # build a binary that plays well with CF/CGov.
+  lint:
+    # We could build against the cflinux4 image.
+    # However, we'll try using the default Ubuntu image, 
+    # but we could run into libc compatibility problems.
+    # https://hub.docker.com/r/cloudfoundry/cflinuxfs4/tags
+    # - image: cloudfoundry/cflinuxfs4:latest
+    # We'll try a go image. That may, or may not,
+    # build a binary that plays well with CF/CGov.
+    docker: &gobase
       - image: cimg/go:1.23.3
+    steps:
+      - checkout
+      - run: |
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
+            sh -s -- -b /usr/local/go/bin v1.62.0
+      - run: golint cmd/serve
+
+  setup-and-build:
+    docker: *gobase
     steps:
       # Checkout the code as the first step.
       - checkout
@@ -35,17 +44,15 @@ jobs:
             chmod 755 sqlc
             sudo mv sqlc /bin/sqlc
       - run: |
-            # PATH=$PATH:/usr/local/go/bin:/root/go/bin
             go install golang.org/x/tools/cmd/goimports@latest
             go install golang.org/x/tools/cmd/stringer@latest
             go install github.com/google/go-jsonnet/cmd/jsonnet@latest
             go install github.com/google/go-jsonnet/cmd/jsonnet-lint@latest
             go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest
-      - run: |
-            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
-            && sh -s -- -b /usr/local/go/bin v1.62.0
+
       - run: make build
-      
+
+
   # build:
   #   docker:
   #     - image: cimg/go:1.23.3
@@ -61,4 +68,6 @@ jobs:
 workflows:
   build-and-deploy:
     jobs:
-      - setup-and-build
+      - lint
+      - setup-and-build:
+          requires: [ lint ]
