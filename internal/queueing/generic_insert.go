@@ -50,7 +50,7 @@ func Enqueue(ch_qshp <-chan QSHP) {
 		qshp := <-ch_qshp
 		ctx, tx := common.CtxTx(pool)
 
-		queue_to_match := "NONE"
+		var queue_to_match string
 		if strings.HasPrefix(qshp.Queue, "fetch") {
 			queue_to_match = "fetch"
 		} else {

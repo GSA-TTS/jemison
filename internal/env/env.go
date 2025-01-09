@@ -129,11 +129,13 @@ func InitGlobalEnv(this_service string) {
 	}
 
 	// Grab the PORT in the cloud and locally from os.Getenv()
-	viper.BindEnv("PORT")
+	err := viper.BindEnv("PORT")
+	if err != nil {
+		zap.L().Fatal("ENV could not bind env", zap.String("err", err.Error()))
+	}
 
 	//err := viper.ReadInConfig()
-	err := viper.ReadConfig(config.GetYamlFileReader(configName + ".yaml"))
-
+	err = viper.ReadConfig(config.GetYamlFileReader(configName + ".yaml"))
 	if err != nil {
 		log.Fatal("ENV cannot load in the config file ", viper.ConfigFileUsed())
 	}
@@ -154,7 +156,11 @@ func InitGlobalEnv(this_service string) {
 	// with everything in the rgiht places.
 	if IsContainerEnv() || IsLocalTestEnv() {
 		ContainerEnv := container_env{}
-		viper.Unmarshal(&ContainerEnv)
+		err := viper.Unmarshal(&ContainerEnv)
+		if err != nil {
+			log.Println("ENV could not unmarshal VCAP_SERVICES to new")
+			log.Fatal(err)
+		}
 		Env.VcapServices = ContainerEnv.VcapServices
 	}
 

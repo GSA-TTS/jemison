@@ -17,6 +17,9 @@ func ClearCompletedPeriodically() {
 		<-ticker.C
 		zap.L().Warn("clearing completed queue")
 		ctx := context.Background()
-		pool.Exec(ctx, "DELETE FROM river_job WHERE state='completed'")
+		_, err := pool.Exec(ctx, "DELETE FROM river_job WHERE state='completed'")
+		if err != nil {
+			zap.L().Error("failed to periodically delete jobs")
+		}
 	}
 }

@@ -38,7 +38,7 @@ func createLogger(this_service string) *zap.Logger {
 	s, _ := Env.GetUserService(this_service)
 	level := s.GetParamString("debug_level")
 
-	zap_level := zap.InfoLevel
+	var zap_level zapcore.Level
 	switch level {
 	case "debug":
 		zap_level = zap.DebugLevel

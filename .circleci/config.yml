@@ -26,8 +26,7 @@ commands:
       - run:
           name: "install golangci-lint"
           command: |
-            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
-            sh -s -- -b /usr/local/go/bin v<< parameters.version >>
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/go/bin v<< parameters.version >>
       - run: 
           name: "install jsonnet"
           command: |
