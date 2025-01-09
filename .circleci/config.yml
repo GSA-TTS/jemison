@@ -16,8 +16,8 @@ jobs:
       - run: 
           name: "apt install packages"
           command: |
-            sudo apt-get update \ 
-            && sudo apt-get install -y \
+            sudo apt-get update
+            sudo apt-get install -y \
               build-essential \
               curl \ 
               libpoppler-dev \
@@ -29,16 +29,16 @@ jobs:
       - run: 
           name: "install golang 1.23"
           command: |
-            rm -rf /usr/local/go \
-            && wget https://go.dev/dl/go1.23.3.linux-amd64.tar.gz \
-            && tar -C /usr/local -xzf go1.23.3.linux-amd64.tar.gz
+            rm -rf /usr/local/go
+            wget https://go.dev/dl/go1.23.3.linux-amd64.tar.gz
+            tar -C /usr/local -xzf go1.23.3.linux-amd64.tar.gz
       - run:
           name: "install sqlc"
           command: |
-            wget https://downloads.sqlc.dev/sqlc_1.27.0_linux_amd64.tar.gz \ 
-            && tar xvzf sqlc_1.27.0_linux_amd64.tar.gz \
-            && chmod 755 sqlc \
-            && mv sqlc /bin/sqlc
+            wget https://downloads.sqlc.dev/sqlc_1.27.0_linux_amd64.tar.gz
+            tar xvzf sqlc_1.27.0_linux_amd64.tar.gz
+            chmod 755 sqlc
+            mv sqlc /bin/sqlc
       - run:
           name: "install golang tools"
           command: |
