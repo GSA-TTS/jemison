@@ -2,30 +2,61 @@
 # See: https://circleci.com/docs/configuration-reference
 version: 2.1
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
 jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
+  install:
     docker:
-      # Specify the version you desire here
-      # See: https://circleci.com/developer/images/image/cimg/base
+      # Build against the CF image, for libc compatibiltiy reasons.
       - image: cloudfoundry/cflinuxfs4:latest
-
-    # Add steps to the job
-    # See: https://circleci.com/docs/jobs-steps/#steps-overview & https://circleci.com/docs/configuration-reference/#steps
     steps:
       # Checkout the code as the first step.
       - checkout
       - run:
           name: "Say hello"
           command: "echo Hello, World!"
+      - run: 
+          name: "apt install packages"
+          command: |
+            sudo apt-get update \ 
+            && sudo apt-get install -y \
+              build-essential \
+              curl \ 
+              libpoppler-dev \
+              libpoppler-glib-dev \
+              poppler-utils \
+              software-properties-common \
+              tree \
+              wget
+      - run: 
+          name: "install golang 1.23"
+          command: |
+            rm -rf /usr/local/go \
+            && wget https://go.dev/dl/go1.23.3.linux-amd64.tar.gz \
+            && tar -C /usr/local -xzf go1.23.3.linux-amd64.tar.gz
+      - run:
+          name: "install sqlc"
+          command: |
+            wget https://downloads.sqlc.dev/sqlc_1.27.0_linux_amd64.tar.gz \ 
+            && tar xvzf sqlc_1.27.0_linux_amd64.tar.gz \
+            && chmod 755 sqlc \
+            && mv sqlc /bin/sqlc
+      - run:
+          name: "install golang tools"
+          command: |
+            go install golang.org/x/tools/cmd/goimports@latest
+            go install golang.org/x/tools/cmd/stringer@latest
+            go install github.com/google/go-jsonnet/cmd/jsonnet@latest
+            go install github.com/google/go-jsonnet/cmd/jsonnet-lint@latest
+            go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest
+      - run:
+          name: "install golanglint"
+          command: |
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+            && sh -s -- -b /usr/local/go/bin v1.62.0
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
 workflows:
-  say-hello-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
+  build-and-deploy: # This is the name of the workflow, feel free to change it to better match your workflow.
     # Inside the workflow, you define the jobs you want to run.
     jobs:
-      - say-hello
+      - install
