@@ -56,7 +56,8 @@ jobs:
             make generate
       - run: 
           name: "find the lint"
-          command: golangci-lint run
+          command: golangci-lint run -v
+          no_output_timeout: 5m
 
   setup-and-build:
     docker:
