@@ -11,11 +11,9 @@ jobs:
       # Checkout the code as the first step.
       - checkout
       - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
-      - run: 
-          name: "apt install packages"
-          command: |
+          name: "Installing packages"
+          command: "echo installing packages..."
+      - run: |
             sudo apt-get update
             sudo apt-get install -y \
               build-essential \
@@ -26,30 +24,22 @@ jobs:
               software-properties-common \
               tree \
               wget
-      - run: 
-          name: "install golang 1.23"
-          command: |
+      - run: |
             rm -rf /usr/local/go
             wget https://go.dev/dl/go1.23.3.linux-amd64.tar.gz
             tar -C /usr/local -xzf go1.23.3.linux-amd64.tar.gz
-      - run:
-          name: "install sqlc"
-          command: |
+      - run: |
             wget https://downloads.sqlc.dev/sqlc_1.27.0_linux_amd64.tar.gz
             tar xvzf sqlc_1.27.0_linux_amd64.tar.gz
             chmod 755 sqlc
             mv sqlc /bin/sqlc
-      - run:
-          name: "install golang tools"
-          command: |
+      - run: |
             go install golang.org/x/tools/cmd/goimports@latest
             go install golang.org/x/tools/cmd/stringer@latest
             go install github.com/google/go-jsonnet/cmd/jsonnet@latest
             go install github.com/google/go-jsonnet/cmd/jsonnet-lint@latest
             go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest
-      - run:
-          name: "install golanglint"
-          command: |
+      - run: |
             curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
             && sh -s -- -b /usr/local/go/bin v1.62.0
 
