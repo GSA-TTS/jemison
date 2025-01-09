@@ -30,7 +30,7 @@ jobs:
             wget https://downloads.sqlc.dev/sqlc_1.27.0_linux_amd64.tar.gz
             tar xvzf sqlc_1.27.0_linux_amd64.tar.gz
             chmod 755 sqlc
-            mv sqlc /bin/sqlc
+            sudo mv sqlc /bin/sqlc
       - run: |
             # PATH=$PATH:/usr/local/go/bin:/root/go/bin
             go install golang.org/x/tools/cmd/goimports@latest
