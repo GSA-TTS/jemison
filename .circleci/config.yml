@@ -41,7 +41,8 @@ commands:
             sudo mv sqlc /bin/sqlc
 jobs:
   lint:
-    docker: *gobase
+    docker: &gobase
+      - image: cimg/go:1.23.3
     steps:
       - checkout
       - common-install
@@ -55,8 +56,7 @@ jobs:
           command: golangci-lint run
 
   setup-and-build:
-    docker: &gobase
-      - image: cimg/go:1.23.3
+    docker: *gobase
     steps:
       # Checkout the code as the first step.
       - checkout
