@@ -3,7 +3,7 @@
 version: 2.1
 
 jobs:
-  install:
+  setup:
     docker:
       # We could build against the cflinux4 image.
       # However, we'll try using the default Ubuntu image, 
@@ -21,7 +21,14 @@ jobs:
           command: "echo installing packages..."
       - run: |
             sudo apt-get update
-            sudo apt-get -y install < .circleci/build-packages.txt
+            sudo apt-get -y install build-essential \
+              curl \
+              libpoppler-dev \
+              libpoppler-glib-dev \
+              poppler-utils \
+              software-properties-common \
+              tree \
+              wget
       - run: |
             wget https://downloads.sqlc.dev/sqlc_1.27.0_linux_amd64.tar.gz
             tar xvzf sqlc_1.27.0_linux_amd64.tar.gz
@@ -37,7 +44,6 @@ jobs:
       - run: |
             curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
             && sh -s -- -b /usr/local/go/bin v1.62.0
-      - run: make build
   # build:
   #   docker:
   #     - image: cimg/go:1.23.3
@@ -53,4 +59,4 @@ jobs:
 workflows:
   build-and-deploy:
     jobs:
-      - install
+      - build
