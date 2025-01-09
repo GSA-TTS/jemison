@@ -15,20 +15,9 @@ jobs:
       - image: cimg/go:1.23.3
     steps:
       - checkout
-      - run: |
-            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
-            sh -s -- -b /usr/local/go/bin v1.62.0
-      - run: golangci-lint run
-
-  setup-and-build:
-    docker: *gobase
-    steps:
-      # Checkout the code as the first step.
-      - checkout
-      - run:
-          name: "Installing packages"
-          command: "echo installing packages..."
-      - run: |
+      - run: &common-installs
+          name: "common installs"
+          command: |
             sudo apt-get update
             sudo apt-get -y install build-essential \
               curl \
@@ -38,6 +27,21 @@ jobs:
               software-properties-common \
               tree \
               wget
+      - run: |
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
+            sh -s -- -b /usr/local/go/bin v1.63.4
+      - run: golangci-lint run
+
+  setup-and-build:
+    docker: *gobase
+    steps:
+      # Checkout the code as the first step.
+      - checkout
+      - run: *common-installs
+      - run:
+          name: "Installing packages"
+          command: "echo installing packages..."
+
       - run: |
             wget https://downloads.sqlc.dev/sqlc_1.27.0_linux_amd64.tar.gz
             tar xvzf sqlc_1.27.0_linux_amd64.tar.gz
