@@ -166,11 +166,13 @@ func (s3 *S3) List(prefix string) ([]*ObjInfo, error) {
 		})
 
 	objects := make([]*ObjInfo, 0)
+
 	for object := range objectCh {
 		if object.Err != nil {
 			fmt.Println(object.Err)
 			return nil, object.Err
 		}
+
 		objects = append(objects, NewObjInfo(object.Key, object.Size))
 	}
 	return objects, nil

@@ -1,3 +1,4 @@
+//nolint:all
 package common
 
 import (
@@ -97,13 +98,11 @@ var d64 string = `
 
 func TestUnmarshal(t *testing.T) {
 	b := []byte(d64)
-	//nolint:all
 	NewTLD64s(b)
 }
 
 func TestCheckEdu(t *testing.T) {
 	b := []byte(d64)
-	//nolint:all
 	d, err := NewTLD64s(b)
 	if err != nil {
 		t.Error(err)
@@ -116,7 +115,6 @@ func TestCheckEdu(t *testing.T) {
 
 func TestCountEdu(t *testing.T) {
 	b := []byte(d64)
-	//nolint:all
 	d, err := NewTLD64s(b)
 	if err != nil {
 		t.Error(err)
