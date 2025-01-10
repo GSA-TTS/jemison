@@ -1,5 +1,7 @@
 // kv provides an interface to key/value work in S3
 // It is specialized to the `jemison` architecture.
+//
+//nolint:godox,godot
 package kv
 
 import (
@@ -10,12 +12,11 @@ import (
 	"io"
 	"net/url"
 
+	"github.com/GSA-TTS/jemison/internal/util"
 	minio "github.com/minio/minio-go/v7"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"go.uber.org/zap"
-
-	"github.com/GSA-TTS/jemison/internal/util"
 )
 
 var DEBUG_S3JSON = false
@@ -34,7 +35,6 @@ var DEBUG_S3JSON = false
 // Save() does an open and a close
 // Then, every object is self-contained. Slower, but self-contained.
 // The sync... is hell waiting to happen in terms of debugging.
-//var buckets sync.Map
 
 // S3JSON structs are JSON documents stored in S3.
 // This is because `jemison` shuttles JSON documents in-and-out of S3, and
@@ -49,6 +49,7 @@ type S3JSON struct {
 
 func NewS3JSON(bucket_name string) *S3JSON {
 	s3 := newS3FromBucketName(bucket_name)
+
 	return &S3JSON{
 		Key:   &util.Key{},
 		raw:   nil,
@@ -64,6 +65,7 @@ func NewFromBytes(bucket_name string, scheme util.Scheme, host string, path stri
 	s3 := newS3FromBucketName(bucket_name)
 	key := util.CreateS3Key(scheme, host, path, util.JSON)
 	w_key, _ := sjson.SetBytes(m, "_key", key.Render())
+
 	return &S3JSON{
 		Key:   key,
 		raw:   w_key,
@@ -77,7 +79,9 @@ func NewFromMap(bucket_name string, scheme util.Scheme, host string, path string
 	s3 := newS3FromBucketName(bucket_name)
 	key := util.CreateS3Key(scheme, host, path, util.JSON)
 	m["_key"] = key.Render()
+
 	b, _ := json.Marshal(m)
+
 	return &S3JSON{
 		Key:   key,
 		raw:   b,
@@ -91,6 +95,7 @@ func NewFromMap(bucket_name string, scheme util.Scheme, host string, path string
 func NewEmptyS3JSON(bucket_name string, scheme util.Scheme, host string, path string) *S3JSON {
 	s3 := newS3FromBucketName(bucket_name)
 	key := util.CreateS3Key(scheme, host, path, util.JSON)
+
 	return &S3JSON{
 		Key:   key,
 		raw:   nil,
@@ -123,14 +128,17 @@ func (s3json *S3JSON) Save() error {
 
 	r := bytes.NewReader(s3json.raw)
 	size := int64(len(s3json.raw))
+
 	err := store(&s3json.S3, s3json.Key.Render(), size, r, util.JSON.String())
 	if err != nil {
 		zap.L().Fatal("could not store S3JSON",
 			zap.String("bucket_name", s3json.S3.Bucket.Name),
 			zap.String("key", s3json.Key.Render()),
 			zap.String("err", err.Error()))
+
 		return err
 	}
+
 	return nil
 }
 
@@ -164,6 +172,7 @@ func (s3json *S3JSON) Load() error {
 			zap.String("bucket_name", s3json.S3.Bucket.CredentialString("bucket")),
 			zap.String("key", key),
 			zap.String("error", err.Error()))
+
 		return err
 	}
 
@@ -172,24 +181,27 @@ func (s3json *S3JSON) Load() error {
 	}
 
 	raw, err := io.ReadAll(object)
-
 	if err != nil {
 		zap.L().Error("could not read object bytes",
 			zap.String("bucket_name", s3json.S3.Bucket.CredentialString("bucket")),
 			zap.String("key", key),
 			zap.String("error", err.Error()))
+
 		return err
 	}
 
 	s3json.raw = raw
 	current_mime_type := s3json.GetString("content-type")
+
 	updated, err := sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(current_mime_type))
 	if err != nil {
 		zap.L().Error("could not update s3json.raw")
 	} else {
 		s3json.raw = updated
 	}
+
 	s3json.empty = false
+
 	return nil
 }
 
@@ -199,16 +211,19 @@ func (s3json *S3JSON) GetJSON() []byte {
 
 func (s3json *S3JSON) GetString(gjson_path string) string {
 	r := gjson.GetBytes(s3json.raw, gjson_path)
+
 	return r.String()
 }
 
 func (s3json *S3JSON) GetInt64(gjson_path string) int64 {
 	r := gjson.GetBytes(s3json.raw, gjson_path)
+
 	return int64(r.Int())
 }
 
 func (s3json *S3JSON) GetBool(gjson_path string) bool {
 	r := gjson.GetBytes(s3json.raw, gjson_path)
+
 	return r.Bool()
 }
 
@@ -219,6 +234,7 @@ func (s3json *S3JSON) Set(sjson_path string, value string) {
 			zap.String("sjson_path", sjson_path),
 			zap.String("value", value))
 	}
+
 	s3json.raw = b
 }
 

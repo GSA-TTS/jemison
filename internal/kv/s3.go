@@ -2,7 +2,6 @@ package kv
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -30,6 +29,7 @@ type S3 struct {
 // Lets us copy files to/from the bucket.
 func NewS3(bucket_name string) *S3 {
 	s3 := newS3FromBucketName(bucket_name)
+
 	return &s3
 }
 
@@ -38,6 +38,7 @@ func (s3 *S3) FileToS3(key *util.Key, local_filename string, mime_type string) e
 	if err != nil {
 		log.Fatal("FileToS3 cannot open file ", local_filename)
 	}
+
 	fi, err := reader.Stat()
 	if err != nil {
 		log.Println("KV could not stat file")
@@ -52,6 +53,7 @@ func (s3 *S3) FileToS3Path(key string, local_filename string, mime_type string) 
 	if err != nil {
 		log.Fatal("FileToS3Path cannot open file ", local_filename)
 	}
+
 	fi, err := reader.Stat()
 	if err != nil {
 		log.Println("KV could not stat file")
@@ -63,42 +65,45 @@ func (s3 *S3) FileToS3Path(key string, local_filename string, mime_type string) 
 
 func (s3 *S3) S3ToFile(key *util.Key, local_filename string) error {
 	ctx := context.Background()
+
 	err := s3.MinioClient.FGetObject(
 		ctx,
 		s3.Bucket.CredentialString("bucket"),
 		key.Render(),
 		local_filename,
 		minio.GetObjectOptions{})
-
 	if err != nil {
 		zap.L().Error("could not FGetObject",
 			zap.String("bucket", s3.Bucket.Name),
 			zap.String("key", key.Render()),
 			zap.String("local_filename", local_filename),
 		)
+
 		return err
 	}
+
 	return nil
 }
 
 func (s3 *S3) S3PathToFile(path string, local_filename string) error {
 	ctx := context.Background()
+
 	err := s3.MinioClient.FGetObject(
 		ctx,
 		s3.Bucket.CredentialString("bucket"),
 		path,
 		local_filename,
 		minio.GetObjectOptions{})
-
 	if err != nil {
-		fmt.Println(err)
+		zap.Error(err)
+
 		return err
 	}
+
 	return nil
 }
 
 func (s3 *S3) S3PathToS3JSON(key *util.Key) (*S3JSON, error) {
-
 	// The object has a channel interface that we have to empty.
 	ctx := context.Background()
 	object, err := s3.MinioClient.GetObject(
@@ -121,6 +126,7 @@ func (s3 *S3) S3PathToS3JSON(key *util.Key) (*S3JSON, error) {
 			zap.String("bucket_name", s3.Bucket.CredentialString("bucket")),
 			zap.String("key", key.Render()),
 			zap.String("error", err.Error()))
+
 		return nil, err
 	}
 
@@ -129,12 +135,12 @@ func (s3 *S3) S3PathToS3JSON(key *util.Key) (*S3JSON, error) {
 	}
 
 	raw, err := io.ReadAll(object)
-
 	if err != nil {
 		zap.L().Error("could not read object bytes",
 			zap.String("bucket_name", s3.Bucket.CredentialString("bucket")),
 			zap.String("key", key.Render()),
 			zap.String("error", err.Error()))
+
 		return nil, err
 	}
 
@@ -142,13 +148,16 @@ func (s3 *S3) S3PathToS3JSON(key *util.Key) (*S3JSON, error) {
 	s3json.raw = raw
 	s3json.Key = key
 	current_mime_type := s3json.GetString("content-type")
+
 	updated, err := sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(current_mime_type))
 	if err != nil {
 		zap.L().Error("could not update raw S3JSON")
 	} else {
 		s3json.raw = updated
 	}
+
 	s3json.empty = false
+
 	return s3json, nil
 }
 
@@ -169,11 +178,13 @@ func (s3 *S3) List(prefix string) ([]*ObjInfo, error) {
 
 	for object := range objectCh {
 		if object.Err != nil {
-			fmt.Println(object.Err)
+			zap.Error(object.Err)
+
 			return nil, object.Err
 		}
 
 		objects = append(objects, NewObjInfo(object.Key, object.Size))
 	}
+
 	return objects, nil
 }

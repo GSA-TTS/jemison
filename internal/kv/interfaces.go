@@ -12,7 +12,7 @@ type JSON map[string]string
 type Object interface {
 	GetKey() string
 	GetJson() JSON
-	GetValue(string) string
+	GetValue(key string) string
 	GetSize() int64
 	GetMimeType() string
 }
@@ -44,6 +44,7 @@ func NewObject(key string, value JSON) *Obj {
 
 	size := int64(len(b))
 	mime := ""
+
 	if good, ok := value["content-type"]; !ok {
 		mime = "octet/binary"
 	} else {

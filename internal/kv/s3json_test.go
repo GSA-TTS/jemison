@@ -1,3 +1,4 @@
+//nolint:testpackage
 package kv
 
 import (
@@ -17,8 +18,8 @@ import (
 func setup( /* t *testing.T */ ) func(t *testing.T) {
 	os.Setenv("ENV", "LOCALHOST")
 	env.InitGlobalEnv("testing_env") // we need to pass something
+
 	return func(t *testing.T) {
-		// t.Log("teardown test case")
 	}
 }
 
@@ -31,39 +32,43 @@ func TestKv(t *testing.T) {
 
 func TestEmpty(t *testing.T) {
 	setup()
+
 	s3json := NewEmptyS3JSON("fetch", util.HTTPS, "search.gov", "/")
 	assert.Equal(t, "fetch", s3json.S3.Bucket.Name)
 }
 
-//func NewFromBytes(bucket_name string, scheme util.Scheme, host string, path string, m []byte) *S3JSON {
-
 func TestNewFromBytes(t *testing.T) {
 	setup()
+
 	s3json := NewFromBytes("fetch", util.HTTPS, "search.gov", "/", []byte(`{"a": 3, "b": 5}`))
 	assert.Equal(t, "fetch", s3json.S3.Bucket.Name)
 }
 
 func TestGetFromBytes(t *testing.T) {
 	setup()
+
 	s3json := NewFromBytes("fetch", util.HTTPS, "search.gov", "/", []byte(`{"a": 3, "b": 5}`))
 	assert.Equal(t, int64(3), s3json.GetInt64("a"))
 }
 
 func TestSave(t *testing.T) {
 	setup()
+
 	s3json := NewFromBytes("fetch", util.HTTPS, "search.gov", "/", []byte(`{"a": 3, "b": 5}`))
-	//nolint:all
 	s3json.Save()
 	assert.Equal(t, int64(3), s3json.GetInt64("a"))
 }
 
 func TestLoad(t *testing.T) {
 	setup()
+
 	s3json := NewEmptyS3JSON("fetch", util.HTTPS, "search.gov", "/")
+
 	err := s3json.Load()
 	if err != nil {
 		zap.L().Error("TestLoad", zap.String("error", err.Error()))
 	}
+
 	zap.L().Info("TestLoad", zap.ByteString("raw", s3json.raw))
 	assert.Equal(t, int64(3), s3json.GetInt64("a"))
 	assert.Equal(t, int64(5), s3json.GetInt64("b"))
