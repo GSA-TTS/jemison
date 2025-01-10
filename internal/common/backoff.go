@@ -8,18 +8,33 @@ import (
 	"go.uber.org/zap"
 )
 
+const EXPBACK = 1.03
+
 func BackoffLoop(host string, politeSleep int64, lastHitMap *sync.Map, lastBackoffMap *sync.Map) {
 	for {
 		// Look at the timing map.
-		lastHitTime, ok := lastHitMap.Load(host)
+		lastHitTime, _ := lastHitMap.Load(host)
 		// If we're in the map, and we're within 2s, we should keep checking after a backoff
 		politeDuration := time.Duration(politeSleep) * time.Second
 
-		if ok && (time.Since(lastHitTime.(time.Time)) < politeDuration) {
+		lht, ok := lastHitTime.(time.Time)
+		if !ok {
+			zap.L().Error("could not cast time.Time")
+		}
+
+		if ok && (time.Since(lht) < politeDuration) {
 			// There will be a last backoff time.
 			last, _ := lastBackoffMap.Load(host)
-			newBackoffTime := float64(politeSleep)/10*rand.Float64() + float64(last.(int64))*1.03
+
+			lv, ok := last.(int64)
+			if !ok {
+				zap.L().Error("could not cast int64")
+			}
+
+			//nolint:gosec
+			newBackoffTime := float64(politeSleep)/10*rand.Float64() + float64(lv)*EXPBACK
 			time.Sleep(time.Duration(newBackoffTime) * time.Second)
+
 			continue
 		} else {
 			// We're not in the map, or it is more than <polite> milliseconds!
@@ -29,8 +44,8 @@ func BackoffLoop(host string, politeSleep int64, lastHitMap *sync.Map, lastBacko
 				zap.String("host", host))
 			lastBackoffMap.Store(host, politeSleep)
 			lastHitMap.Store(host, time.Now())
+
 			break
 		}
 	}
-
 }

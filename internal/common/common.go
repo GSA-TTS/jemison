@@ -21,11 +21,13 @@ func GetPool(database_url string) (context.Context, *pgxpool.Pool) {
 		)
 		os.Exit(1)
 	}
+
 	return ctx, pool
 }
 
 func CommonQueueInit() (context.Context, *pgxpool.Pool, *river.Workers) {
 	var err error
+
 	database_url, err := env.Env.GetDatabaseUrl(env.QueueDatabase)
 	if err != nil {
 		zap.L().Error("unable to get connection string; exiting",
@@ -38,17 +40,17 @@ func CommonQueueInit() (context.Context, *pgxpool.Pool, *river.Workers) {
 	ctx, pool := GetPool(database_url)
 	// Create a pool of workers
 	workers := river.NewWorkers()
-	return ctx, pool, workers
 
+	return ctx, pool, workers
 }
 
 func CtxTx(pool *pgxpool.Pool) (context.Context, pgx.Tx) {
 	ctx := context.Background()
+
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		zap.L().Panic("cannot init tx from pool")
 	}
-	//defer tx.Rollback(ctx)
 
 	return ctx, tx
 }

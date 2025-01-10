@@ -55,6 +55,7 @@ func TestSave(t *testing.T) {
 	setup()
 
 	s3json := NewFromBytes("fetch", util.HTTPS, "search.gov", "/", []byte(`{"a": 3, "b": 5}`))
+	//nolint:errcheck
 	s3json.Save()
 	assert.Equal(t, int64(3), s3json.GetInt64("a"))
 }
