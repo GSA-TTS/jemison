@@ -15,9 +15,11 @@ import (
 )
 
 var PoliteSleep int64
+
 var ThisServiceName = "fetch"
 
 var RetryClient *http.Client
+
 var Gateway *HostGateway
 
 var JDB *postgres.JemisonDB
@@ -27,6 +29,10 @@ var ChQSHP = make(chan queueing.QSHP)
 var Workers *river.Workers
 
 var MaxFilesize int64
+
+const BYTES_PER_KB = 1024
+
+const KB_PER_MB = 1024
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -49,7 +55,7 @@ func main() {
 	// Pre-compute/lookup the sleep duration for backoff
 	PoliteSleep = service.GetParamInt64("polite_sleep")
 	// 1024KB * 1024B => MB
-	MaxFilesize = service.GetParamInt64("max_filesize_mb") * 1024 * 1024
+	MaxFilesize = service.GetParamInt64("max_filesize_mb") * BYTES_PER_KB * KB_PER_MB
 
 	logger_level := service.GetParamString("debug_level")
 	if logger_level != "debug" {

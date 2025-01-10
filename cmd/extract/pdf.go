@@ -1,3 +1,4 @@
+//nolint:godox
 package main
 
 import (
@@ -14,18 +15,19 @@ import (
 	"go.uber.org/zap"
 )
 
+//nolint:funlen
 func extractPdf(obj *kv.S3JSON) {
-	//rawFilename := obj.GetString("raw")
 	tempFilename := uuid.NewString()
-	// s3 := kv.NewS3(ThisServiceName)
 	raw_copy := obj.Key.Copy()
 	raw_copy.Extension = util.Raw
+
 	err := obj.S3.S3ToFile(raw_copy, tempFilename)
 	if err != nil {
 		zap.L().Error("could not copy s3 object to file",
 			zap.String("raw_copy", raw_copy.Render()),
 			zap.String("tempFilename", tempFilename))
 	}
+
 	defer func() {
 		err := os.Remove(tempFilename)
 		if err != nil {
@@ -46,6 +48,7 @@ func extractPdf(obj *kv.S3JSON) {
 		// Give up on big files.
 		// FIXME: we need to clean up the bucket, too, and delete PDFs there
 		zap.L().Debug("file too large, not processing")
+
 		return
 	}
 
@@ -55,12 +58,13 @@ func extractPdf(obj *kv.S3JSON) {
 		zap.L().Warn("poppler failed to open pdf",
 			zap.String("raw_filename", tempFilename),
 			zap.String("key", obj.Key.Render()))
+
 		return
 	} else {
 		// Pull the metadata out, and include in every object.
 		info := doc.Info()
-		for page_no := 0; page_no < doc.GetNPages(); page_no++ {
 
+		for page_no := 0; page_no < doc.GetNPages(); page_no++ {
 			page_number_anchor := fmt.Sprintf("#page=%d", page_no+1)
 			copied_key := obj.Key.Copy()
 			copied_key.Path = copied_key.Path + page_number_anchor
@@ -84,13 +88,14 @@ func extractPdf(obj *kv.S3JSON) {
 				obj.Key.Path,
 				obj.GetJSON(),
 			)
+
 			err = new_obj.Save()
 			if err != nil {
 				zap.L().Error("could not save object to s3",
 					zap.String("key", new_obj.Key.Render()))
 			}
+
 			page.Close()
-			// e.Stats.Increment("page_count")
 
 			// Enqueue next steps
 			ChQSHP <- queueing.QSHP{
@@ -106,7 +111,4 @@ func extractPdf(obj *kv.S3JSON) {
 	}
 
 	doc.Close()
-
-	//e.Stats.Increment("document_count")
-
 }

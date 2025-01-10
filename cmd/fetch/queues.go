@@ -22,12 +22,21 @@ import (
 // GLOBAL TO THE APP
 // One pool of connections for River.
 
-// The work client, doing the work of `fetch`
+const ROUNDROBIN = "round_robin"
+
+const OPD = "one_per_domain"
+
+const SIMPLE = "simple"
+
+// The work client, doing the work of `fetch`.
 var FetchPool *pgxpool.Pool
+
 var FetchClient *river.Client[pgx.Tx]
+
 var FetchQueues map[string]river.QueueConfig
 
 var RoundRobinWorkerPool atomic.Int64
+
 var RoundRobinSize int64
 
 var QueueingModel string
@@ -37,17 +46,25 @@ type FetchWorker struct {
 }
 
 func oneQueuePerHost(workers *river.Workers, workerCount int64) {
+	fetchService, err := env.Env.GetUserService(ThisServiceName)
+	if err != nil {
+		zap.L().Error("could not fetch service config")
+		log.Println(err)
+		os.Exit(1)
+	}
 
 	MainQueue := make(map[string]river.QueueConfig)
 	MainQueue[ThisServiceName] = river.QueueConfig{MaxWorkers: int(workerCount)}
 
 	FetchQueues = make(map[string]river.QueueConfig)
+
 	for _, host := range config.GetListOfHosts(env.Env.AllowedHosts) {
 		asciiHost := stripHostToAscii(host)
 		asciiQueueName := fmt.Sprintf("fetch-%s", asciiHost)
 		zap.L().Info("setting up queue", zap.String("queue_name", asciiQueueName))
+
 		FetchQueues[asciiQueueName] = river.QueueConfig{
-			MaxWorkers: 30,
+			MaxWorkers: int(workerCount),
 		}
 	}
 
@@ -65,25 +82,25 @@ func oneQueuePerHost(workers *river.Workers, workerCount int64) {
 	hostsFetchClient, err := river.NewClient(riverpgxv5.New(FetchPool), &river.Config{
 		Queues:            FetchQueues,
 		Workers:           workers,
-		FetchCooldown:     500 * time.Millisecond,
-		FetchPollInterval: 1000 * time.Millisecond,
+		FetchCooldown:     time.Duration(fetchService.GetParamInt64("fetch_cooldown_ms")) * time.Millisecond,
+		FetchPollInterval: time.Duration(fetchService.GetParamInt64("fetch_poll_interval_ms")) * time.Millisecond,
 	})
 	if err != nil {
-		zap.L().Error("could not establish hosts fetch client")
-		log.Println(err)
-		os.Exit(1)
+		zap.Error(err)
+		zap.L().Fatal("could not establish hosts fetch client")
 	}
 
 	// Start the work clients
 	ctx := context.Background()
 	if err := mainFetchClient.Start(ctx); err != nil {
-		zap.L().Error("could not launch main fetch client.", zap.String("err", err.Error()))
-		os.Exit(42)
+		zap.Error(err)
+		zap.L().Fatal("could not launch main fetch client.")
 	}
+
 	ctx = context.Background()
 	if err := hostsFetchClient.Start(ctx); err != nil {
-		zap.L().Error("could not launch hosts client", zap.String("err", err.Error()))
-		os.Exit(42)
+		zap.Error(err)
+		zap.L().Fatal("could not launch hosts")
 	}
 }
 
@@ -102,23 +119,23 @@ func roundRobinQueues(workers *river.Workers, workerCount int64) {
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
-		zap.L().Error("could not establish main worker pool")
-		log.Println(err)
-		os.Exit(1)
+		zap.Error(err)
+		zap.L().Fatal("could not establish hosts fetch client")
 	}
+
 	FetchClient = fetchClient
 
 	// Start the work clients
 	if err := fetchClient.Start(context.Background()); err != nil {
-		zap.L().Error("workers are not the means of production. exiting.")
-		os.Exit(42)
+		zap.Error(err)
+		zap.L().Fatal("workers are not the means of production")
 	}
 
 	// start the round-robin queues
 	for n := range workerCount {
 		queueName := fmt.Sprintf("%s-%d", ThisServiceName, n)
+
 		fetchClient, err = river.NewClient(riverpgxv5.New(FetchPool), &river.Config{
 			Queues: map[string]river.QueueConfig{
 				queueName: {MaxWorkers: int(workerCount)},
@@ -127,20 +144,18 @@ func roundRobinQueues(workers *river.Workers, workerCount int64) {
 			Workers: workers,
 		})
 		if err != nil {
-			zap.L().Error("could not establish worker pool", zap.Int64("pool number", n))
-			log.Println(err)
-			os.Exit(1)
+			zap.Error(err)
+			zap.L().Fatal("could not establish worker pool")
 		}
 		// Start the work clients
 		if err := fetchClient.Start(context.Background()); err != nil {
-			zap.L().Error("workers are not the means of production. exiting.")
-			os.Exit(42)
+			zap.Error(err)
+			zap.L().Fatal("workers are not the means of production")
 		}
 	}
 }
 
 func simpleQueue(workers *river.Workers, workerCount int64) {
-
 	MainQueue := make(map[string]river.QueueConfig)
 	MainQueue[ThisServiceName] = river.QueueConfig{MaxWorkers: int(workerCount)}
 
@@ -150,21 +165,19 @@ func simpleQueue(workers *river.Workers, workerCount int64) {
 		Workers: workers,
 	})
 	if err != nil {
-		zap.L().Error("could not establish main fetch client")
-		log.Println(err)
-		os.Exit(1)
+		zap.Error(err)
+		zap.L().Fatal("could not establish hosts fetch client")
 	}
 
 	// Start the work clients
 	ctx := context.Background()
 	if err := mainFetchClient.Start(ctx); err != nil {
 		zap.L().Error("could not launch main fetch client.", zap.String("err", err.Error()))
-		os.Exit(42)
+		zap.L().Fatal("exiting")
 	}
 }
 
 func InitializeQueues() {
-	//var fetchClient *river.Client[pgx.Tx]
 	queueing.InitializeRiverQueues()
 
 	_, fP, workers := common.CommonQueueInit()
@@ -179,22 +192,28 @@ func InitializeQueues() {
 		log.Println(err)
 		os.Exit(1)
 	}
+
 	workerCount := fetchService.GetParamInt64("workers")
 	queueModel := fetchService.GetParamString("queue_model")
 
 	switch queueModel {
-	case "round_robin":
-		QueueingModel = "round_robin"
+	case ROUNDROBIN:
+		QueueingModel = ROUNDROBIN
+
 		roundRobinQueues(workers, workerCount)
-	case "one_per_domain":
-		QueueingModel = "one_per_domain"
+	case OPD:
+		QueueingModel = OPD
+
 		oneQueuePerHost(workers, workerCount)
-	case "simple":
-		QueueingModel = "simple"
+	case SIMPLE:
+		QueueingModel = SIMPLE
+
 		simpleQueue(workers, workerCount)
 	default:
 		zap.L().Warn("falling through to default simple queueing model")
-		QueueingModel = "simple"
+
+		QueueingModel = SIMPLE
+
 		simpleQueue(workers, workerCount)
 	}
 }

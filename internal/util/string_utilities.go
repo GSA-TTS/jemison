@@ -107,6 +107,7 @@ func TrimSuffix(s, suffix string) string {
 func CanonicalizeURL(s string) (string, error) {
 	u, err := url.Parse(s)
 	if err != nil {
+		//nolint:wrapcheck
 		return "", err
 	}
 	u.Host = strings.ToLower(u.Host)

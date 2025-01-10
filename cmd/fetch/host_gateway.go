@@ -52,7 +52,9 @@ func (hsm *HostGateway) GoodToGo(host string) bool {
 		// We have not seen this host before
 		// Therefore, add them to the map, and they're good to go.
 		zap.L().Debug("gateway: host never seen before")
+
 		hsm.last[host] = time.Now()
+
 		return true
 	}
 }
@@ -61,6 +63,7 @@ func (hsm *HostGateway) HostExists(host string) bool {
 	hsm.m.RLock()
 	defer hsm.m.RUnlock()
 	_, ok := hsm.last[host]
+
 	return ok
 }
 

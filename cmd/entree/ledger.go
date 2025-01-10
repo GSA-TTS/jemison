@@ -11,6 +11,7 @@ func NewSafeLedger() *SafeLedger {
 	l := &SafeLedger{
 		Ledger: make(map[string]bool),
 	}
+
 	return l
 }
 

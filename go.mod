@@ -20,7 +20,6 @@ require (
 	github.com/pingcap/log v1.1.0
 	github.com/riverqueue/river v0.13.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.13.0
-	github.com/robfig/cron v1.2.0
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.18.0

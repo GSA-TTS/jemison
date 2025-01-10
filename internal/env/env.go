@@ -108,6 +108,7 @@ func InitGlobalEnv(this_service string) {
 	if IsContainerEnv() {
 		log.Println("IsContainerEnv")
 		viper.SetConfigName("container")
+
 		configName = "container"
 	}
 
@@ -116,12 +117,14 @@ func InitGlobalEnv(this_service string) {
 		viper.AddConfigPath("../../config")
 		viper.AddConfigPath("config")
 		viper.SetConfigName("localhost")
+
 		configName = "localhost"
 	}
 
 	if IsCloudEnv() {
 		log.Println("IsCloudEnv")
 		viper.SetConfigName("cf")
+
 		configName = "cf"
 		// https://github.com/spf13/viper/issues/1706
 		// https://github.com/spf13/viper/issues/1671
@@ -156,21 +159,25 @@ func InitGlobalEnv(this_service string) {
 	// with everything in the rgiht places.
 	if IsContainerEnv() || IsLocalTestEnv() {
 		ContainerEnv := container_env{}
+
 		err := viper.Unmarshal(&ContainerEnv)
 		if err != nil {
 			log.Println("ENV could not unmarshal VCAP_SERVICES to new")
 			log.Fatal(err)
 		}
+
 		Env.VcapServices = ContainerEnv.VcapServices
 	}
 
 	if IsCloudEnv() {
 		new_vcs := make(map[string][]Service, 0)
+
 		err := json.Unmarshal([]byte(os.Getenv("VCAP_SERVICES")), &new_vcs)
 		if err != nil {
 			log.Println("ENV could not unmarshal VCAP_SERVICES to new")
 			log.Fatal(err)
 		}
+
 		Env.VcapServices = new_vcs
 	}
 
@@ -191,6 +198,7 @@ func InitGlobalEnv(this_service string) {
 	if err != nil {
 		log.Println("could not get service for ", this_service)
 	}
+
 	Env.AllowedHosts = s.GetParamString("allowed_hosts")
 	log.Println("Setting Schedule: ", Env.AllowedHosts)
 
@@ -212,6 +220,7 @@ func (e *env) GetDatabaseUrl(name string) (string, error) {
 					params,
 				), nil
 			}
+
 			if IsCloudEnv() {
 				return db.CredentialString("uri"), nil
 			}

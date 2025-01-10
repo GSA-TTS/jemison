@@ -24,6 +24,7 @@ import (
 func scrape_sel(sel *goquery.Selection) string {
 	txt := sel.Text()
 	repl := strings.ToLower(txt)
+
 	return util.CollapseWhitespace(repl)
 }
 
@@ -31,11 +32,13 @@ func _getTitle(doc *goquery.Document) string {
 	// Some pages are just really malformed.
 	// It turns out there are title tags elsewhere in the doc.
 	title := ""
+
 	doc.Find("title").Each(func(ndx int, sel *goquery.Selection) {
 		if title == "" {
 			title = scrape_sel(sel)
 		}
 	})
+
 	return util.CollapseWhitespace(title)
 }
 
@@ -54,11 +57,14 @@ func _getHeaders(doc *goquery.Document) map[string][]string {
 		"h8",
 	} {
 		accum := make([]string, 0)
+
 		doc.Find(tag).Each(func(ndx int, sel *goquery.Selection) {
 			accum = append(accum, util.CollapseWhitespace(scrape_sel(sel)))
 		})
+
 		headers[tag] = accum
 	}
+
 	return headers
 }
 
@@ -71,6 +77,7 @@ func _getBodyContent(doc *goquery.Document) string {
 	doc.Find(".usa-footer").Remove()
 
 	content := ""
+
 	for _, elem := range []string{
 		"p",
 		"li",
@@ -101,9 +108,9 @@ func _getBodyContent(doc *goquery.Document) string {
 // * title: string
 // * headers: []string (as JSON)
 // * body : string
-
+//
+//nolint:funlen
 func extractHtml(obj *kv.S3JSON) {
-	// rawFilename := obj.GetString("raw")
 	rawFilename := uuid.NewString()
 	// The file is not in this service... it's in the `fetch` bucket.`
 	s3 := kv.NewS3("fetch")
@@ -111,17 +118,21 @@ func extractHtml(obj *kv.S3JSON) {
 	raw_key := obj.Key.Copy()
 	raw_key.Extension = util.Raw
 	zap.L().Debug("looking up raw key", zap.String("raw_key", raw_key.Render()))
+
 	err := s3.S3ToFile(raw_key, rawFilename)
 	if err != nil {
 		zap.L().Error("could not create tempfile from s3",
 			zap.String("raw_key", raw_key.Render()),
 			zap.String("rawfile", rawFilename))
 	}
+
 	rawFile, err := os.Open(rawFilename)
 	if err != nil {
 		zap.L().Error("cannot open tempfile", zap.String("filename", rawFilename))
+
 		return
 	}
+
 	defer func() {
 		rawFile.Close()
 		os.Remove(rawFilename)
@@ -132,6 +143,7 @@ func extractHtml(obj *kv.S3JSON) {
 		zap.L().Error("cannot create new doc from raw file",
 			zap.String("rawFilename", rawFilename),
 			zap.String("rawKey", raw_key.Render()))
+
 		return
 	}
 
@@ -160,12 +172,14 @@ func extractHtml(obj *kv.S3JSON) {
 	jsonString, err := json.Marshal(headers)
 	if err != nil {
 		zap.L().Error("could not marshal headers to JSON", zap.String("title", title))
+
 		return
 	}
+
 	new_obj.Set("headers", string(jsonString))
 	new_obj.Set("body", content)
-	err = new_obj.Save()
 
+	err = new_obj.Save()
 	if err != nil {
 		zap.L().Error("could not save object", zap.String("key", new_obj.Key.Render()))
 	}
@@ -177,5 +191,4 @@ func extractHtml(obj *kv.S3JSON) {
 		Host:   obj.Key.Host,
 		Path:   obj.Key.Path,
 	}
-
 }

@@ -1,6 +1,11 @@
 package util
 
 import (
+	// SHA1 is a weak cypher. We could use sha256.
+	// However, we're not using it for crypto purposes,
+	// just for generating a temporary name. We do not
+	// expect collisions.
+	//nolint:gosec
 	"crypto/sha1"
 	"fmt"
 	"strings"
@@ -54,8 +59,10 @@ type Key struct {
 	Extension Extension
 }
 
+//nolint:gosec
 func (k *Key) SHA1() string {
 	sha := fmt.Sprintf("%x", sha1.Sum([]byte(k.Host+k.Path)))
+
 	return sha
 }
 

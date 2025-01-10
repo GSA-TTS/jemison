@@ -11,6 +11,7 @@ import (
 )
 
 var ThisServiceName = "extract"
+
 var ChQSHP = make(chan queueing.QSHP)
 
 func main() {
@@ -19,6 +20,7 @@ func main() {
 	log.Println("environment initialized")
 
 	routers := common.InitializeAPI()
+
 	go queueing.Enqueue(ChQSHP)
 
 	zap.L().Info("listening to the music of the spheres",

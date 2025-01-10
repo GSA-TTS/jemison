@@ -32,6 +32,14 @@ local parameters = [
     'max_filesize_mb',
     { cf: 10, container: 20 },
   ],
+  [
+    'fetch_cooldown_ms',
+    { cf: 500, container: 500 },
+  ],
+  [
+    'fetch_poll_interval_ms',
+    { cf: 1000, container: 1000 },
+  ],
 ] + B.parameters;
 
 {

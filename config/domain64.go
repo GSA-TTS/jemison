@@ -60,6 +60,7 @@ func FQDNToDomain64(fqdn string) (int64, error) {
 	hex := gjson.GetBytes(cached_file, tld+".FQDNToDomain64."+escaped).String()
 	value, err := strconv.ParseInt(hex, 16, 64)
 	if err != nil {
+		//nolint:wrapcheck
 		return 0, err
 	}
 	return int64(value), nil
@@ -105,6 +106,7 @@ func GetAllFQDNToDomain64() map[string]int64 {
 func HexToDec64(hex string) (int64, error) {
 	value, err := strconv.ParseInt(hex, 16, 64)
 	if err != nil {
+		//nolint:wrapcheck
 		return 0, err
 	}
 	return value, nil

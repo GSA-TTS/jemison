@@ -23,7 +23,6 @@ type JemisonDB struct {
 }
 
 func NewJemisonDB() *JemisonDB {
-
 	jdb := JemisonDB{
 		Config: make(map[string]*pgxpool.Config),
 		Pool:   make(map[string]*pgxpool.Pool),
@@ -50,7 +49,6 @@ func NewJemisonDB() *JemisonDB {
 
 		jdb.Config[db_name] = cfg
 		jdb.Pool[db_name] = pool
-
 	}
 
 	jdb.WorkDBQueries = work_db.New(jdb.Pool[env.JemisonWorkDatabase])
@@ -61,10 +59,15 @@ func NewJemisonDB() *JemisonDB {
 
 func Config(db_string string) *pgxpool.Config {
 	const defaultMaxConns = int32(100)
+
 	const defaultMinConns = int32(0)
+
 	const defaultMaxConnLifetime = time.Hour
+
 	const defaultMaxConnIdleTime = time.Minute * 30
+
 	const defaultHealthCheckPeriod = time.Minute
+
 	const defaultConnectTimeout = time.Second * 5
 
 	dbConfig, err := pgxpool.ParseConfig(db_string)
@@ -85,49 +88,82 @@ func Config(db_string string) *pgxpool.Config {
 // The cache is a key/value store, so prepend
 // keys to avoid collisions. It should be impossible,
 // but still... that's the convention of these functions.
+//
+//nolint:gosec
 func (jdb *JemisonDB) GetScheme(scheme string) int32 {
 	if val, ok := jdb.constCache.Load("scheme:" + scheme); ok {
-		return val.(int32)
+		v, assert_ok := val.(int32)
+		if !assert_ok {
+			zap.L().Error("could not convert scheme integer")
+		}
+
+		return v
 	} else {
 		scheme_int := config.GetScheme(scheme)
+		// This is a guaranteed save conversion
 		jdb.constCache.Store("scheme:"+scheme, int32(scheme_int))
+
 		return int32(scheme_int)
 	}
 }
 
 func (jdb *JemisonDB) GetContentType(ct string) int {
 	if val, ok := jdb.constCache.Load("contenttype:" + ct); ok {
-		return val.(int)
+		v, assert_ok := val.(int)
+		if !assert_ok {
+			zap.L().Error("could not convert content type integer")
+		}
+
+		return v
 	} else {
 		ct_int := config.GetContentType(ct)
 		jdb.constCache.Store("contenttype:"+ct, ct_int)
+
 		return ct_int
 	}
 }
 
+const HOURS_PER_DAY = 24
+
+const DAYS_PER_WEEK = 7
+
+const DAYS_PER_BIWEEK = 14
+
+const DAYS_PER_MONTH = 30
+
+const DAYS_PER_QUARTER = 3 * 30
+
+const DAYS_PER_BIANNUM = 6 * 30
+
+const DAYS_PER_ANNUM = 12 * 30
+
 func (jdb *JemisonDB) GetNextFetch(fqdn string) time.Time {
+	var delta time.Duration
 
 	schedule := config.GetSchedule(fqdn)
-	delta := time.Duration(30 * 24 * time.Hour)
+
 	switch schedule {
 	case config.Daily:
-		delta = time.Duration(24 * time.Hour)
+		delta = time.Duration(HOURS_PER_DAY * time.Hour)
 	case config.Weekly:
-		delta = time.Duration(7 * 24 * time.Hour)
+		delta = time.Duration(DAYS_PER_WEEK * HOURS_PER_DAY * time.Hour)
 	case config.BiWeekly:
-		delta = time.Duration(14 * 24 * time.Hour)
+		delta = time.Duration(DAYS_PER_BIWEEK * HOURS_PER_DAY * time.Hour)
 	case config.Monthly:
-		// pass
+		delta = time.Duration(DAYS_PER_MONTH * HOURS_PER_DAY * time.Hour)
 	case config.Quarterly:
-		delta = time.Duration(3 * 30 * 24 * time.Hour)
+		delta = time.Duration(DAYS_PER_QUARTER * HOURS_PER_DAY * time.Hour)
 	case config.BiAnnually:
-		delta = time.Duration(6 * 30 * 24 * time.Hour)
+		delta = time.Duration(DAYS_PER_BIANNUM * HOURS_PER_DAY * time.Hour)
 	case config.Annually:
-		delta = time.Duration(12 * 30 * 24 * time.Hour)
+		delta = time.Duration(DAYS_PER_ANNUM * HOURS_PER_DAY * time.Hour)
 	default:
-		// pass
+		// Default to monthly.
+		delta = time.Duration(DAYS_PER_MONTH * HOURS_PER_DAY * time.Hour)
 	}
+
 	next_fetch := time.Now().Add(delta)
+
 	return next_fetch
 }
 

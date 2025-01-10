@@ -1,3 +1,4 @@
+//nolint:godox
 package main
 
 import (
@@ -11,10 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
+const SINGLE_PASS = "single"
+
+const FULL_PASS = "full"
+
 // The front line of questions involve whether or not
 // it is a single URL and if there is a hall pass.
 
-// FIXME: add the host_id here. Pass it through
+// FIXME: add the host_id here. Pass it through.
 type EntreeCheck struct {
 	// "full" or "single"
 	Kind     string
@@ -32,6 +37,7 @@ func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) (*EntreeChec
 	// host_id, err := JDB.WorkDBQueries.GetHostId(ctx, host)
 	d64, err := config.FQDNToDomain64(host)
 	if err != nil {
+		//nolint:wrapcheck
 		return nil, err
 	}
 
@@ -51,24 +57,29 @@ func EvaluateEntree(ec *EntreeCheck) {
 	if IsSingleWithPass(ec) {
 		zap.L().Debug("is-single-with-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
+
 		it_shall_pass = true
 	} else if IsSingleNoPass(ec) {
 		zap.L().Debug("is-single-no-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
+
 		it_shall_pass = true
 	} else if IsFullWithPass(ec) {
 		zap.L().Debug("is-full-with-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
 		SetHostNextFetchToYesterday(ec)
 		SetGuestbookFetchToYesterdayForHost(ec)
+
 		it_shall_pass = true
 	} else if IsFullNoPass(ec) {
 		zap.L().Debug("is-full-no-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
+
 		it_shall_pass = true
 	} else {
 		zap.L().Debug("no entree evaluation criteria met",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
+
 		it_shall_pass = false
 	}
 
@@ -82,6 +93,7 @@ func EvaluateEntree(ec *EntreeCheck) {
 		// Fetch will update a second time.
 		scheme := JDB.GetScheme(ec.Scheme)
 		next_fetch := JDB.GetNextFetch(ec.Host)
+
 		_, err := JDB.WorkDBQueries.UpdateGuestbookNextFetch(context.Background(),
 			work_db.UpdateGuestbookNextFetchParams{
 				Scheme:   scheme,
@@ -94,7 +106,6 @@ func EvaluateEntree(ec *EntreeCheck) {
 				},
 			},
 		)
-
 		if err != nil {
 			zap.L().Error("failed to update guestbook next fetch",
 				zap.Int64("domain64", ec.Domain64), zap.String("path", ec.Path))
@@ -119,7 +130,7 @@ func EvaluateEntree(ec *EntreeCheck) {
 func IsSingleWithPass(ec *EntreeCheck) bool {
 	// This just allows us to queue this onward to `fetch`.
 	// Fetch will handle guestbook updates.
-	return ec.Kind == "single" && ec.HallPass
+	return ec.Kind == SINGLE_PASS && ec.HallPass
 }
 
 // A single URL with no pass is most likely a URL
@@ -129,7 +140,7 @@ func IsSingleWithPass(ec *EntreeCheck) bool {
 //   - Fetch the page
 //   - Update last_fetch in guestbook
 func IsSingleNoPass(ec *EntreeCheck) bool {
-	return ec.Kind == "single" && !ec.HallPass && CheckIfIsInGuestbook(ec)
+	return ec.Kind == SINGLE_PASS && !ec.HallPass && CheckIfIsInGuestbook(ec)
 }
 
 func CheckIfIsInGuestbook(ec *EntreeCheck) bool {
@@ -152,7 +163,7 @@ func CheckIfIsInGuestbook(ec *EntreeCheck) bool {
 //   - Set last_fetch in guestbook
 //   - Reset next_fetch in hosts table after completion
 func IsFullWithPass(ec *EntreeCheck) bool {
-	return ec.Kind == "full" && ec.HallPass
+	return ec.Kind == FULL_PASS && ec.HallPass
 }
 
 // This is probably a nightly enqueue.
@@ -160,24 +171,27 @@ func IsFullWithPass(ec *EntreeCheck) bool {
 // Possible side-effects:
 //   - None. It runs on what is in the DBs.
 func IsFullNoPass(ec *EntreeCheck) bool {
-	return ec.Kind == "full" && !ec.HallPass && CheckIfAfterHostNextFetch(ec)
+	return ec.Kind == FULL_PASS && !ec.HallPass && CheckIfAfterHostNextFetch(ec)
 }
 
 // Support functions
 
 func isInGuestbook(ec *EntreeCheck) bool {
 	ctx := context.Background()
+
 	b, err := JDB.WorkDBQueries.CheckEntryExistsInGuestbook(ctx, ec.Domain64)
 	if err != nil {
 		zap.L().Fatal("could not check if in guestbook",
 			zap.Int64("domain64", ec.Domain64),
 			zap.String("domain64_hex", config.Dec64ToHex(ec.Domain64)))
 	}
+
 	return b
 }
 
 func CheckIfAfterGuestbookNextFetch(ec *EntreeCheck) bool {
 	ctx := context.Background()
+
 	entry, err := JDB.WorkDBQueries.GetGuestbookEntry(ctx, work_db.GetGuestbookEntryParams{
 		Domain64: ec.Domain64,
 		Path:     ec.Path,
@@ -193,6 +207,7 @@ func CheckIfAfterGuestbookNextFetch(ec *EntreeCheck) bool {
 
 func CheckIfAfterHostNextFetch(ec *EntreeCheck) bool {
 	ctx := context.Background()
+
 	ts, err := JDB.WorkDBQueries.GetHostNextFetch(ctx, ec.Domain64)
 	if err != nil {
 		// If it isn't in the host table, then return false
@@ -204,6 +219,7 @@ func CheckIfAfterHostNextFetch(ec *EntreeCheck) bool {
 
 func SetHostNextFetchToYesterday(ec *EntreeCheck) {
 	ctx := context.Background()
+
 	err := JDB.WorkDBQueries.SetHostNextFetchToYesterday(ctx, ec.Domain64)
 	if err != nil {
 		zap.L().Error("could not set host fetch to yesterday",
@@ -213,6 +229,7 @@ func SetHostNextFetchToYesterday(ec *EntreeCheck) {
 
 func SetGuestbookFetchToYesterdayForHost(ec *EntreeCheck) {
 	ctx := context.Background()
+
 	err := JDB.WorkDBQueries.SetGuestbookFetchToYesterdayForHost(ctx, ec.Domain64)
 	if err != nil {
 		zap.L().Fatal("could not set guestbook to yesterday for host",

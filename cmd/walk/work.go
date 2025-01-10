@@ -159,6 +159,7 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 
 	err = filter.IsReject(lu)
 	if err != nil {
+		//nolint:wrapcheck
 		return "", err
 	}
 

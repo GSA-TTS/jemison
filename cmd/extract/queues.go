@@ -24,11 +24,13 @@ type ExtractWorker struct {
 
 func InitializeQueues() {
 	var extractClient *river.Client[pgx.Tx]
+
 	var extractPool *pgxpool.Pool
 
 	queueing.InitializeRiverQueues()
 
 	var err error
+
 	ctx, extractPool, workers := common.CommonQueueInit()
 
 	zap.L().Debug("initialized common queues")
@@ -50,7 +52,6 @@ func InitializeQueues() {
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
 		zap.L().Error("could not establish worker pool")
 		log.Println(err)
@@ -60,6 +61,6 @@ func InitializeQueues() {
 	// Start the work clients
 	if err := extractClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.")
-		os.Exit(42)
+		os.Exit(1)
 	}
 }

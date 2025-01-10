@@ -24,7 +24,6 @@ func FetchRequestHandler(c *gin.Context) {
 	if err := c.BindJSON(&fri); err != nil {
 		return
 	}
-	//zap.L().Debug("api checking key", zap.String("api-key", fri.ApiKey))
 
 	if fri.ApiKey == os.Getenv("API_KEY") {
 		zap.L().Debug("api enqueue", zap.String("host", fri.Host), zap.String("path", fri.Path))
@@ -54,7 +53,7 @@ func FetchRequestHandler(c *gin.Context) {
 }
 
 func SitemapRequestHandler(c *gin.Context) {
-
+	// pass
 }
 
 func ExtendApi(r *gin.Engine) {

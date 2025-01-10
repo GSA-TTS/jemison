@@ -1,3 +1,4 @@
+//nolint:godox
 package main
 
 import (
@@ -33,7 +34,7 @@ func extract(obj *kv.S3JSON) {
 			if !isTooLarge(obj) {
 				extractPdf(obj)
 			} else {
-				//FIXME DELETE THIS THING
+				// FIXME: This should be deleted at this point, if we get here.
 				zap.L().Error("s3json object too large",
 					zap.String("host", obj.Key.Host), zap.String("path", obj.Key.Path))
 			}
@@ -42,7 +43,6 @@ func extract(obj *kv.S3JSON) {
 }
 
 func (w *ExtractWorker) Work(ctx context.Context, job *river.Job[common.ExtractArgs]) error {
-
 	zap.L().Info("extracting",
 		zap.String("host", job.Args.Host),
 		zap.String("path", job.Args.Path))
@@ -51,12 +51,14 @@ func (w *ExtractWorker) Work(ctx context.Context, job *river.Job[common.ExtractA
 		util.ToScheme(job.Args.Scheme),
 		job.Args.Host,
 		job.Args.Path)
+
 	err := s3json.Load()
 	if err != nil {
 		zap.L().Error("could not load s3 JSON",
 			zap.String("host", job.Args.Host),
 			zap.String("path", job.Args.Path))
 	}
+
 	extract(s3json)
 
 	zap.L().Debug("extraction finished")

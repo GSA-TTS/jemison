@@ -17,8 +17,9 @@ import (
 // GLOBAL TO THE APP
 // One pool of connections for River.
 
-// The work client, doing the work of `Entree`
+// The work client, doing the work of `Entree`.
 var EntreePool *pgxpool.Pool
+
 var EntreeClient *river.Client[pgx.Tx]
 
 type EntreeWorker struct {
@@ -49,7 +50,6 @@ func InitializeQueues() {
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
 		zap.L().Error("could not establish worker pool")
 		log.Println(err)
@@ -59,6 +59,6 @@ func InitializeQueues() {
 	// Start the work clients
 	if err := EntreeClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.")
-		os.Exit(42)
+		os.Exit(1)
 	}
 }

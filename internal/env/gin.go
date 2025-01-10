@@ -9,6 +9,7 @@ import (
 
 func SetGinReleaseMode(this_service string) {
 	s, _ := Env.GetUserService(this_service)
+
 	level := s.GetParamString("debug_level")
 	if level == "debug" {
 		zap.L().Info("setting gin debug level to debug")

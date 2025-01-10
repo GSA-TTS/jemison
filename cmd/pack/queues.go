@@ -53,6 +53,6 @@ func InitializeQueues() {
 	// Start the work clients
 	if err := packClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.")
-		os.Exit(42)
+		os.Exit(1)
 	}
 }

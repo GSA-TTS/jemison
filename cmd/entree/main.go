@@ -17,6 +17,7 @@ import (
 )
 
 var ThisServiceName = "entree"
+
 var ChQSHP = make(chan queueing.QSHP)
 
 var JDB *postgres.JemisonDB
@@ -58,9 +59,11 @@ func main() {
 		}
 	}
 
-	// FIXME: This would pre-load the crontab with
-	// values based on the Domain64 JSON.
-	//crontab(env.Env.AllowedHosts)
+	/*
+		// FIXME: This would pre-load the crontab with
+		// values based on the Domain64 JSON.
+		//crontab(env.Env.AllowedHosts)
+	*/
 
 	go queueing.Enqueue(ChQSHP)
 
