@@ -4,6 +4,7 @@ version: 2.1
 
 commands:
   common-install:
+    description: Performs a common install in each job
     steps:
       - run:
           name: "common installs"
@@ -18,6 +19,7 @@ commands:
               tree \
               wget
   install-go-utilities:
+    description: Installs the golang utilities
     parameters:
       version: 
         default: 1.63.4
@@ -65,8 +67,8 @@ jobs:
     steps:
       # Checkout the code as the first step.
       - checkout
-      - run: common-install
-      - run: install-go-utilities
+      - common-install
+      - install-go-utilities
       - run: make build
 
 
