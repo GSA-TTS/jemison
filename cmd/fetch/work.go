@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"math"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -203,7 +204,9 @@ func (w *FetchWorker) Work(_ context.Context, job *river.Job[common.FetchArgs]) 
 		}
 	}
 
-	cl, err := strconv.Atoi(pageJSON["content-length"])
+	var cl int32
+
+	parsed, err := strconv.Atoi(pageJSON["content-length"])
 	if err != nil {
 		zap.L().Warn("could not convert length to int",
 			zap.String("host", job.Args.Host),
@@ -211,12 +214,12 @@ func (w *FetchWorker) Work(_ context.Context, job *river.Job[common.FetchArgs]) 
 	}
 
 	// Make sure we stay within int32
-	if cl > MaxInt32 {
-		cl = MaxInt32
-	}
-
-	if cl < MinInt32 {
-		cl = MinInt32
+	if parsed >= math.MinInt32 && parsed <= math.MaxInt32 {
+		cl = int32(parsed)
+	} else if parsed > math.MaxInt32 {
+		cl = math.MaxInt32
+	} else {
+		cl = math.MinInt32
 	}
 
 	scheme := JDB.GetScheme("https")
