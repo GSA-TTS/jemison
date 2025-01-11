@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var test_vcap = `{
+var testVCAP = `{
     "s3": [
     {
             "label": "s3",
@@ -113,7 +113,7 @@ var test_vcap = `{
 }`
 
 func TestReadEnv(t *testing.T) {
-	os.Setenv("VCAP_SERVICES", test_vcap)
+	os.Setenv("VCAP_SERVICES", testVCAP)
 
 	vcs := VcapServicesFromEnv("VCAP_SERVICES")
 
@@ -123,7 +123,7 @@ func TestReadEnv(t *testing.T) {
 }
 
 func TestDatbases(t *testing.T) {
-	os.Setenv("VCAP_SERVICES", test_vcap)
+	os.Setenv("VCAP_SERVICES", testVCAP)
 
 	vcs := VcapServicesFromEnv("VCAP_SERVICES")
 

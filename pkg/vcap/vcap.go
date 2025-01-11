@@ -9,6 +9,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+//nolint:revive
 type VcapServices struct {
 	Source    string
 	VCAP      gjson.Result
@@ -17,21 +18,22 @@ type VcapServices struct {
 	Databases []Database
 }
 
-func VcapServicesFromEnv(env_var string) VcapServices {
+//nolint:revive
+func VcapServicesFromEnv(envVar string) VcapServices {
 	vcs := VcapServices{}
-	vcs.EnvStringToJson(env_var)
+	vcs.EnvStringToJSON(envVar)
 	vcs.ParseBuckets()
 	vcs.ParseDatabases()
 
 	return vcs
 }
 
-func (vcs *VcapServices) EnvStringToJson(env_var string) {
+func (vcs *VcapServices) EnvStringToJSON(envVar string) {
 	// Read it in from the VCAP_SERVICES env var,
 	// which will provide a large JSON structure.
 	vcs.Source = "env"
-	vcs.VCAP = gjson.Parse(os.Getenv(env_var))
-	vcs.Raw = os.Getenv(env_var)
+	vcs.VCAP = gjson.Parse(os.Getenv(envVar))
+	vcs.Raw = os.Getenv(envVar)
 }
 
 type Bucket struct {
@@ -92,9 +94,9 @@ func (vcs *VcapServices) ParseDatabases() {
 	vcs.Databases = databases
 }
 
-func (vcs *VcapServices) GetBucketByName(bucket_name string) *Bucket {
+func (vcs *VcapServices) GetBucketByName(bucketName string) *Bucket {
 	for _, b := range vcs.Buckets {
-		if b.ServiceName == bucket_name {
+		if b.ServiceName == bucketName {
 			return &b
 		}
 	}
@@ -102,12 +104,12 @@ func (vcs *VcapServices) GetBucketByName(bucket_name string) *Bucket {
 	return nil
 }
 
-func (vcs *VcapServices) ToS3Config(service_name string) *aws.Config {
+func (vcs *VcapServices) ToS3Config(serviceName string) *aws.Config {
 	cfg := aws.Config{}
 	creds := aws.Credentials{}
 
 	for _, b := range vcs.Buckets {
-		if b.ServiceName == service_name {
+		if b.ServiceName == serviceName {
 			cfg.Region = b.Region
 			creds.AccessKeyID = b.AccessKeyID
 			creds.SecretAccessKey = b.SecretAccessKey
