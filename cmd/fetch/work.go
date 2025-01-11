@@ -215,6 +215,7 @@ func (w *FetchWorker) Work(_ context.Context, job *river.Job[common.FetchArgs]) 
 
 	// Make sure we stay within int32
 	if parsed >= math.MinInt32 && parsed <= math.MaxInt32 {
+		//nolint:gosec
 		cl = int32(parsed)
 	} else if parsed > math.MaxInt32 {
 		cl = math.MaxInt32
@@ -243,11 +244,10 @@ func (w *FetchWorker) Work(_ context.Context, job *river.Job[common.FetchArgs]) 
 	guestbookID, err := JDB.WorkDBQueries.UpdateGuestbookFetch(
 		context.Background(),
 		work_db.UpdateGuestbookFetchParams{
-			Scheme:   scheme,
-			Domain64: d64,
-			Path:     job.Args.Path,
-			//nolint:gosec
-			ContentLength: int32(cl),
+			Scheme:        scheme,
+			Domain64:      d64,
+			Path:          job.Args.Path,
+			ContentLength: cl,
 			//nolint:gosec
 			ContentType: int32(contentType),
 			LastModified: pgtype.Timestamp{
