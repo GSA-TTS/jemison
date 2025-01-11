@@ -1,3 +1,4 @@
+//nolint:godox
 package main
 
 import (
@@ -38,12 +39,14 @@ type SearchResult struct {
 
 func to64(s string) int64 {
 	v, _ := strconv.Atoi(s)
+
 	return int64(v)
 }
 
 // Would just be * with SQLite.
 var _stemmed = ":*"
 
+//nolint:funlen
 func runQuery(sri SearchRequestInput) ([]SearchResult, time.Duration, error) {
 	start := time.Now()
 
@@ -61,9 +64,11 @@ func runQuery(sri SearchRequestInput) ([]SearchResult, time.Duration, error) {
 		et = strings.TrimSpace(et)
 		stemmed, err := snowball.Stem(et, "english", true)
 		zap.L().Debug("stemmed result", zap.String("et", et), zap.String("stemmed", stemmed))
+
 		if err != nil {
 			zap.L().Debug("stemming error", zap.String("err", err.Error()))
 		}
+
 		query.AddToQuery(Or(et, stemmed+_stemmed))
 	}
 
@@ -84,6 +89,7 @@ func runQuery(sri SearchRequestInput) ([]SearchResult, time.Duration, error) {
 	duration := time.Since(start)
 
 	cleaned := make([]SearchResult, 0)
+
 	for _, r := range res {
 		// FIXME: the database structure is forcing us into an N+1 queries
 		// situation... Not good.
@@ -120,8 +126,8 @@ func runQuery(sri SearchRequestInput) ([]SearchResult, time.Duration, error) {
 			FQDN:       fqdn,
 		})
 	}
-	return cleaned, duration, err
 
+	return cleaned, duration, err
 }
 
 func SearchHandler(c *gin.Context) {
@@ -140,6 +146,7 @@ func SearchHandler(c *gin.Context) {
 			"elapsed": duration,
 			"results": nil,
 		})
+
 		return
 	} else {
 		c.IndentedJSON(http.StatusOK, gin.H{
@@ -147,6 +154,7 @@ func SearchHandler(c *gin.Context) {
 			"elapsed": duration,
 			"results": rows,
 		})
+
 		return
 	}
 }

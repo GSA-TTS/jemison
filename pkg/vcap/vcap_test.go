@@ -1,3 +1,4 @@
+//nolint:testpackage
 package vcap
 
 import (
@@ -113,7 +114,9 @@ var test_vcap = `{
 
 func TestReadEnv(t *testing.T) {
 	os.Setenv("VCAP_SERVICES", test_vcap)
+
 	vcs := VcapServicesFromEnv("VCAP_SERVICES")
+
 	// Expected, actual
 	assert.Equal(t, 1, len(vcs.Buckets))
 	assert.Equal(t, 2, len(vcs.Databases))
@@ -121,6 +124,7 @@ func TestReadEnv(t *testing.T) {
 
 func TestDatbases(t *testing.T) {
 	os.Setenv("VCAP_SERVICES", test_vcap)
+
 	vcs := VcapServicesFromEnv("VCAP_SERVICES")
 
 	assert.Equal(t, "fac-db", vcs.Databases[0].ServiceName)

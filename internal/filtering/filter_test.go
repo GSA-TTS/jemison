@@ -1,3 +1,4 @@
+//nolint:testpackage,lll
 package filter
 
 import (
@@ -52,6 +53,5 @@ func TestAll(t *testing.T) {
 		} else {
 			assert.Equal(t, nil, tt.fun(u))
 		}
-
 	}
 }

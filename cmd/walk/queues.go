@@ -14,8 +14,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// The work client, doing the work of `fetch`
+// The work client, doing the work of `fetch`.
 var dbPool *pgxpool.Pool
+
 var walkClient *river.Client[pgx.Tx]
 
 type WalkWorker struct {
@@ -46,7 +47,6 @@ func InitializeQueues() {
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
 		zap.L().Error("could not establish worker pool")
 		log.Println(err)
@@ -56,6 +56,6 @@ func InitializeQueues() {
 	// Start the work clients
 	if err := walkClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.")
-		os.Exit(42)
+		os.Exit(1)
 	}
 }

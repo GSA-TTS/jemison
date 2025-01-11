@@ -39,6 +39,7 @@ func createLogger(this_service string) *zap.Logger {
 	level := s.GetParamString("debug_level")
 
 	var zap_level zapcore.Level
+
 	switch level {
 	case "debug":
 		zap_level = zap.DebugLevel
@@ -75,6 +76,7 @@ func createLogger(this_service string) *zap.Logger {
 	if err != nil {
 		log.Fatal("cannot build zap logger from config")
 	}
+
 	return zap.Must(logger, nil)
 }
 

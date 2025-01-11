@@ -14,6 +14,7 @@ import (
 )
 
 var packPool *pgxpool.Pool
+
 var packClient *river.Client[pgx.Tx]
 
 type PackWorker struct {
@@ -21,7 +22,6 @@ type PackWorker struct {
 }
 
 func InitializeQueues() {
-
 	ctx, pP, workers := common.CommonQueueInit()
 	packPool = pP
 
@@ -43,7 +43,6 @@ func InitializeQueues() {
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
 		zap.L().Error("could not establish worker pool")
 		log.Println(err)

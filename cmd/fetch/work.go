@@ -1,3 +1,4 @@
+//nolint:godox
 package main
 
 import (
@@ -160,8 +161,8 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	// will proceed.
 
 	zap.L().Debug("fetching page content", zap.String("url", host_and_path(job)))
-	page_json, err := fetch_page_content(job)
 
+	page_json, err := fetch_page_content(job)
 	if err != nil {
 		// The queueing system retries should save us here; bail if we
 		// can't get the content now.

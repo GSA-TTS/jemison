@@ -28,7 +28,6 @@ func packHtml(s3json *kv.S3JSON) {
 			Tag:      "path",
 			Content:  s3json.GetString("path"),
 		})
-
 	if err != nil {
 		zap.L().Error("could not insert path when packing",
 			zap.String("_key", s3json.GetString("_key")),
@@ -36,6 +35,7 @@ func packHtml(s3json *kv.S3JSON) {
 			zap.String("path", s3json.GetString("path")),
 		)
 	}
+
 	zap.L().Debug("packed path")
 
 	///////////////////////
@@ -48,7 +48,6 @@ func packHtml(s3json *kv.S3JSON) {
 			Tag:      "title",
 			Content:  s3json.GetString("title"),
 		})
-
 	if err != nil {
 		zap.L().Error("could not insert title when packing",
 			zap.String("_key", s3json.GetString("_key")),
@@ -56,6 +55,7 @@ func packHtml(s3json *kv.S3JSON) {
 			zap.String("path", s3json.GetString("title")),
 		)
 	}
+
 	zap.L().Debug("packed title")
 
 	///////////////////////
@@ -68,7 +68,6 @@ func packHtml(s3json *kv.S3JSON) {
 			Tag:      "body",
 			Content:  s3json.GetString("body"),
 		})
-
 	if err != nil {
 		zap.L().Error("could not insert title when packing",
 			zap.String("_key", s3json.GetString("_key")),
@@ -76,5 +75,6 @@ func packHtml(s3json *kv.S3JSON) {
 			zap.String("path", s3json.GetString("body")),
 		)
 	}
+
 	zap.L().Debug("packed body")
 }

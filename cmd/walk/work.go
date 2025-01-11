@@ -1,3 +1,4 @@
+//nolint:godox,godot
 package main
 
 import (
@@ -21,6 +22,8 @@ import (
 
 // //////////////////////////////////////
 // go_for_a_walk
+//
+//nolint:wsl
 func go_for_a_walk(s3json *kv.S3JSON) {
 	cleaned_mime_type := util.CleanMimeType(s3json.GetString("content-type"))
 	switch cleaned_mime_type {
@@ -33,8 +36,9 @@ func go_for_a_walk(s3json *kv.S3JSON) {
 
 // //////////////////////////////////////
 // extract_links
+//
+//nolint:cyclop,funlen
 func extract_links(s3json *kv.S3JSON) []*url.URL {
-
 	// Return a unique set
 	link_set := make(map[string]bool)
 	// Remove all trailing slashes.
@@ -45,24 +49,29 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 	tempFilename := uuid.NewString()
 
 	s3 := kv.NewS3("fetch")
+
 	err := s3.S3PathToFile(raw, tempFilename)
 	if err != nil {
 		zap.L().Error("could not copy s3 to local file",
 			zap.String("tempFilename", tempFilename),
 			zap.String("raw", raw))
+
 		return links
 	}
 
 	tFile, err := os.Open(tempFilename)
 	if err != nil {
 		zap.L().Error("cannot open temporary file", zap.String("filename", tempFilename))
+
 		return links
 	}
+
 	defer func() { tFile.Close(); os.Remove(tempFilename) }()
 
 	fi, err := os.Stat(tempFilename)
 	if err != nil {
 		zap.L().Error(err.Error())
+
 		return links
 	}
 	// get the size
@@ -70,9 +79,9 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 	zap.L().Debug("tempFilename size", zap.Int64("size", size))
 
 	doc, err := goquery.NewDocumentFromReader(tFile)
-
 	if err != nil {
 		zap.L().Error("WALK cannot convert to document", zap.String("key", s3json.Key.Render()))
+
 		return links
 	}
 
@@ -82,8 +91,7 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 
 	doc.Find("a[href]").Each(func(ndx int, sel *goquery.Selection) {
 		link, exists := sel.Attr("href")
-		// zap.L().Debug("found link", zap.String("link", link), zap.Bool("exists", exists))
-
+		//nolint:nestif
 		if exists {
 			link_to_crawl, err := is_crawlable(s3json, link)
 			if err != nil {
@@ -98,6 +106,7 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 					if strings.HasPrefix(link_to_crawl, "http") {
 						zap.L().Debug("link to crawl", zap.String("url", link_to_crawl))
 						expirable_cache.Set(link_to_crawl, 0, 0)
+
 						link_set[link_to_crawl] = true
 					}
 				}
@@ -107,6 +116,7 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 
 	for link := range link_set {
 		link = trimSuffix(link, "/")
+
 		u, err := url.Parse(link)
 		if err != nil {
 			zap.L().Warn("WALK ExtractLinks did a bad with",
@@ -116,7 +126,6 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 		}
 	}
 
-	//log.Println("EXTRACTED", links)
 	return links
 }
 
@@ -126,6 +135,7 @@ func walk_html(s3json *kv.S3JSON) {
 	links := extract_links(s3json)
 	zap.L().Debug("walk considering links",
 		zap.Int("count", len(links)))
+
 	for _, link := range links {
 		// The links come back canonicalized against the host. So,
 		// all the fields should be present.
@@ -144,6 +154,8 @@ func walk_html(s3json *kv.S3JSON) {
 // The whole `is_crawlable` function wants to be a ruleset of some sort.
 // A set of functions applied that, one at a time, decide if a link should
 // be crawled.
+
+const TOO_FEW_PIECES_IN_HOST = 2
 
 func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 	base := url.URL{
@@ -171,6 +183,7 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 			zap.String("link", link),
 			zap.String("base", base.String()),
 			zap.String("resolved", resolved.String()))
+
 		return resolved.String(), nil
 	}
 
@@ -181,11 +194,12 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 			zap.String("link", link),
 			zap.String("base", base.String()),
 		)
+
 		return base.String(), nil
 	}
 
 	pieces := strings.Split(base.Host, ".")
-	if len(pieces) < 2 {
+	if len(pieces) < TOO_FEW_PIECES_IN_HOST {
 		return "", errors.New("crawler: link host has too few pieces")
 	} else {
 		tld := pieces[len(pieces)-2] + "." + pieces[len(pieces)-1]
@@ -202,16 +216,20 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 func trimSuffix(s, suffix string) string {
 	if strings.HasSuffix(s, suffix) {
 		s = s[:len(s)-len(suffix)]
+
 		return s
 	} else {
 		return s
 	}
 }
 
+const MAX_FAILED_ATTEMPTS = 2
+
 func (w *WalkWorker) Work(ctx context.Context, job *river.Job[common.WalkArgs]) error {
-	if job.Attempt > 2 {
+	if job.Attempt > MAX_FAILED_ATTEMPTS {
 		zap.L().Warn("walking zombie; dropping",
 			zap.String("host", job.Args.Host), zap.String("path", job.Args.Path))
+
 		return nil
 	}
 
@@ -225,6 +243,7 @@ func (w *WalkWorker) Work(ctx context.Context, job *river.Job[common.WalkArgs]) 
 		util.ToScheme(job.Args.Scheme),
 		job.Args.Host,
 		job.Args.Path)
+
 	err := s3json.Load()
 	if err != nil {
 		// Don't do anything if we can't load the S3.

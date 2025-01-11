@@ -5,26 +5,29 @@ import (
 	"net/http"
 	"time"
 
-	expirable "github.com/go-pkgz/expirable-cache/v3"
-	"github.com/patrickmn/go-cache"
-
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/queueing"
+	expirable "github.com/go-pkgz/expirable-cache/v3"
+	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 )
 
 var expirable_cache expirable.Cache[string, int]
+
 var RecentlyVisitedCache *cache.Cache
+
 var ChQSHP = make(chan queueing.QSHP)
+
 var ThisServiceName = "walk"
 
 func main() {
-
 	env.InitGlobalEnv(ThisServiceName)
+
 	InitializeQueues()
 
 	log.Println("environment initialized")
+
 	service, _ := env.Env.GetUserService("walk")
 
 	engine := common.InitializeAPI()

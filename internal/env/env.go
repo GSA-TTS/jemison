@@ -1,3 +1,4 @@
+//nolint:godox
 package env
 
 import (
@@ -13,13 +14,17 @@ import (
 )
 
 var Env *env
+
 var DEBUG_ENV = false
 
 // Constants for the attached services
 // These reach into the VCAP_SERVICES and are
 // defined in the Terraform.
+
 const QueueDatabase = "jemison-queues-db"
+
 const JemisonWorkDatabase = "jemison-work-db"
+
 const SearchDatabase = "jemison-search-db"
 
 var validBucketNames = []string{
@@ -34,12 +39,13 @@ func IsValidBucketName(name string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 type Credentials interface {
-	CredentialString(string) string
-	CredentialInt(string) int64
+	CredentialString(cred string) string
+	CredentialInt(cred string) int64
 }
 
 type Service struct {
@@ -48,29 +54,43 @@ type Service struct {
 	Parameters  map[string]interface{} `mapstructure:"parameters"`
 }
 
-// FIXME: This should be string, err
+// FIXME: This should be string, err.
 func (s *Service) CredentialString(key string) string {
 	if v, ok := s.Credentials[key]; ok {
-		return v.(string)
+		cast, ok := v.(string)
+		if !ok {
+			zap.L().Error("could not cast to string")
+		}
+
+		return cast
 	} else {
 		zap.L().Error("cannot find credential for key",
 			zap.String("key", key))
+
 		return fmt.Sprintf("NOVAL:%s", v)
 	}
 }
 
 func (s *Service) CredentialInt(key string) int64 {
 	if v, ok := s.Credentials[key]; ok {
-		return int64(v.(int))
+		cast, ok := v.(int)
+		if !ok {
+			zap.L().Error("could not cast to int")
+		}
+
+		return int64(cast)
 	} else {
 		zap.L().Error("cannot find credential for key",
 			zap.String("key", key))
+
 		return -1
 	}
 }
 
 type Database = Service
+
 type Bucket = Service
+
 type env struct {
 	AppEnv        string               `mapstructure:"APPENV"`
 	Home          string               `mapstructure:"HOME"`
@@ -92,9 +112,12 @@ type container_env struct {
 }
 
 var container_envs = []string{"DOCKER", "GH_ACTIONS"}
+
 var cf_envs = []string{"SANDBOX", "PREVIEW", "DEV", "STAGING", "PROD"}
+
 var test_envs = []string{"LOCALHOST"}
 
+//nolint:cyclop,funlen
 func InitGlobalEnv(this_service string) {
 	Env = &env{}
 	configName := "NO_CONFIG_NAME_SET"
@@ -137,20 +160,14 @@ func InitGlobalEnv(this_service string) {
 		zap.L().Fatal("ENV could not bind env", zap.String("err", err.Error()))
 	}
 
-	//err := viper.ReadInConfig()
 	err = viper.ReadConfig(config.GetYamlFileReader(configName + ".yaml"))
 	if err != nil {
 		log.Fatal("ENV cannot load in the config file ", viper.ConfigFileUsed())
 	}
 
 	err = viper.Unmarshal(&Env)
-
 	if err != nil {
 		log.Fatal("ENV can't find config files: ", err)
-	}
-
-	if err != nil {
-		log.Fatal("ENV environment can't be loaded: ", err)
 	}
 
 	// CF puts VCAP_* in a string containing JSON.
@@ -201,7 +218,6 @@ func InitGlobalEnv(this_service string) {
 
 	Env.AllowedHosts = s.GetParamString("allowed_hosts")
 	log.Println("Setting Schedule: ", Env.AllowedHosts)
-
 }
 
 // https://stackoverflow.com/questions/3582552/what-is-the-format-for-the-postgresql-connection-string-url
@@ -212,6 +228,8 @@ func (e *env) GetDatabaseUrl(name string) (string, error) {
 			params := ""
 			if IsContainerEnv() || IsLocalTestEnv() {
 				params = "?sslmode=disable"
+
+				//nolint:nosprintfhostport
 				return fmt.Sprintf("postgresql://%s@%s:%d/%s%s",
 					db.CredentialString("username"),
 					db.CredentialString("host"),
@@ -224,9 +242,9 @@ func (e *env) GetDatabaseUrl(name string) (string, error) {
 			if IsCloudEnv() {
 				return db.CredentialString("uri"), nil
 			}
-
 		}
 	}
+
 	return "", fmt.Errorf("ENV no db found with name %s", name)
 }
 
@@ -244,6 +262,7 @@ func (e *env) GetObjectStore(name string) (Bucket, error) {
 			return b, nil
 		}
 	}
+
 	return Bucket{}, fmt.Errorf("ENV no bucket with name %s", name)
 }
 
@@ -253,6 +272,7 @@ func (e *env) GetUserService(name string) (Service, error) {
 			return s, nil
 		}
 	}
+
 	return Service{}, fmt.Errorf("ENV no service with name %s", name)
 }
 
@@ -272,21 +292,31 @@ func (s *Service) GetParamInt64(key string) int64 {
 	for _, global_s := range Env.UserServices {
 		if s.Name == global_s.Name {
 			if global_param_val, ok := global_s.Parameters[key]; ok {
-				return int64(global_param_val.(int))
+				cast, ok := global_param_val.(int)
+				if !ok {
+					zap.L().Error("could not cast int")
+				}
+
+				return int64(cast)
 			} else {
 				log.Fatalf("ENV no int64 param found for %s", key)
 			}
 		}
 	}
+
 	return -1
 }
 
 func (s *Service) GetParamString(key string) string {
-
 	for _, global_s := range Env.UserServices {
 		if s.Name == global_s.Name {
 			if global_param_val, ok := global_s.Parameters[key]; ok {
-				return global_param_val.(string)
+				cast, ok := global_param_val.(string)
+				if !ok {
+					zap.L().Error("could not cast string")
+				}
+
+				return cast
 			} else {
 				log.Fatalf("ENV no string param found for %s", key)
 			}
@@ -300,12 +330,18 @@ func (s *Service) GetParamBool(key string) bool {
 	for _, global_s := range Env.UserServices {
 		if s.Name == global_s.Name {
 			if global_param_val, ok := global_s.Parameters[key]; ok {
-				return global_param_val.(bool)
+				cast, ok := global_param_val.(bool)
+				if !ok {
+					zap.L().Error("could not cast bool")
+				}
+
+				return cast
 			} else {
 				log.Fatalf("ENV no bool param found for %s", key)
 			}
 		}
 	}
+
 	return false
 }
 
@@ -314,5 +350,6 @@ func (s *Service) AsJson() string {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	return string(b)
 }

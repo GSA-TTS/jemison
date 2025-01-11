@@ -34,11 +34,20 @@ var skippable_extensions = []string{
 	"xlsx",
 }
 
+const IS_TOO_SHORT_MIN = 5
+
+const EXCEEDS_LENGTH_MAX = 200
+
+const TOO_MANY_REPEATS_LEN = 8
+
+const TOO_MANY_REPEATS_COUNT = 50
+
 func exceedsLength(length int) func(*url.URL) error {
 	return func(u *url.URL) error {
 		if len(u.String()) > length {
 			return fmt.Errorf("exceeds length [%d]: %s", length, u.String())
 		}
+
 		return nil
 	}
 }
@@ -48,6 +57,7 @@ func hasSlashHttp(u *url.URL) error {
 	if m {
 		return fmt.Errorf("http in middle of url: %s", u.Path)
 	}
+
 	return nil
 }
 
@@ -56,6 +66,7 @@ func insecureGov(u *url.URL) error {
 	if m {
 		return fmt.Errorf("insecure URL: %s", u.String())
 	}
+
 	return nil
 }
 
@@ -64,6 +75,7 @@ func isTooShort(length int) func(*url.URL) error {
 		if len(u.String()) < length {
 			return fmt.Errorf("too short [%d]: %s", length, u.String())
 		}
+
 		return nil
 	}
 }
@@ -74,6 +86,7 @@ func hasSkippablePrefixRelative(u *url.URL) error {
 			return fmt.Errorf("skippable prefix [%s]: %s", sp, u.Path)
 		}
 	}
+
 	return nil
 }
 
@@ -83,15 +96,18 @@ func hasSkippableExtension(u *url.URL) error {
 			return fmt.Errorf("skippable extension [%s]: %s", ext, u.Path)
 		}
 	}
+
 	return nil
 }
 
 func hasTooManyRepeats(repeatLength int, threshold int) func(*url.URL) error {
 	return func(u *url.URL) error {
 		s := u.String()
+
 		end := len(s) - repeatLength
 		chunks := make(map[string]bool)
 		repeats := make(map[string]int)
+
 		for ndx := 0; ndx < end; ndx++ {
 			piece := s[ndx : ndx+repeatLength]
 			if _, ok := chunks[piece]; ok {
@@ -110,6 +126,7 @@ func hasTooManyRepeats(repeatLength int, threshold int) func(*url.URL) error {
 		if total >= threshold {
 			return fmt.Errorf("too many repeats [%d over %d]: %s", total, threshold, u.String())
 		}
+
 		return nil
 	}
 }
@@ -122,6 +139,7 @@ func endsWithWrongSlash(u *url.URL) error {
 			return fmt.Errorf("ends with backslash: %s", u.String())
 		}
 	}
+
 	return nil
 }
 
@@ -139,13 +157,13 @@ func GeneralRules() []Rule {
 	rules = append(rules, Rule{
 		Match:  all,
 		Msg:    "max isTooShort 5",
-		Reject: isTooShort(5),
+		Reject: isTooShort(IS_TOO_SHORT_MIN),
 	})
 
 	rules = append(rules, Rule{
 		Match:  all,
 		Msg:    "exceedsLength 200",
-		Reject: exceedsLength(200),
+		Reject: exceedsLength(EXCEEDS_LENGTH_MAX),
 	})
 
 	rules = append(rules, Rule{
@@ -181,7 +199,7 @@ func GeneralRules() []Rule {
 	rules = append(rules, Rule{
 		Match:  all,
 		Msg:    "hasTooManyRepeats",
-		Reject: hasTooManyRepeats(8, 50),
+		Reject: hasTooManyRepeats(TOO_MANY_REPEATS_LEN, TOO_MANY_REPEATS_COUNT),
 	})
 
 	return rules

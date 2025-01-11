@@ -204,8 +204,8 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (
 
 	// Stream that file over to S3
 	s3 := kv.NewS3(ThisServiceName)
-	err = s3.FileToS3(key, tempFilename, util.GetMimeType(contentType))
 
+	err = s3.FileToS3(key, tempFilename, util.GetMimeType(contentType))
 	if err != nil {
 		zap.L().Error("could not send file to S3",
 			zap.String("key", key.Render()),

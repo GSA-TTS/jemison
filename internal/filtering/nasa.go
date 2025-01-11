@@ -6,7 +6,7 @@ import (
 	"regexp"
 )
 
-// We compare against the host, so leave off the scheme
+// We compare against the host, so leave off the scheme.
 var nasa string = `.*nasa.gov`
 
 func hasRightHere(u *url.URL) error {
@@ -14,6 +14,7 @@ func hasRightHere(u *url.URL) error {
 	if match {
 		return fmt.Errorf("repeating `right here`: %s", u.String())
 	}
+
 	return nil
 }
 

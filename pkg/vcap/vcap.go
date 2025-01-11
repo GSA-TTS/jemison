@@ -1,3 +1,4 @@
+//nolint:godox
 package vcap
 
 import (
@@ -21,6 +22,7 @@ func VcapServicesFromEnv(env_var string) VcapServices {
 	vcs.EnvStringToJson(env_var)
 	vcs.ParseBuckets()
 	vcs.ParseDatabases()
+
 	return vcs
 }
 
@@ -52,10 +54,11 @@ func (vcs *VcapServices) ParseBuckets() {
 			AccessKeyID:     b.Get("credentials.access_key_id").String(),
 			SecretAccessKey: b.Get("credentials.secret_access_key").String(),
 			// FIXME: Check the endpoint shape, and set it
-			//URI:             b.Get("credentials.uri").String(),
-			//Endpoint:        b.Get("credentials.endpoint").String(),
+			// URI:             b.Get("credentials.uri").String(),
+			// Endpoint:        b.Get("credentials.endpoint").String(),
 		})
 	}
+
 	vcs.Buckets = buckets
 }
 
@@ -85,6 +88,7 @@ func (vcs *VcapServices) ParseDatabases() {
 			Endpoint:     db.Get("credentials.endpoint").String(),
 		})
 	}
+
 	vcs.Databases = databases
 }
 
@@ -94,6 +98,7 @@ func (vcs *VcapServices) GetBucketByName(bucket_name string) *Bucket {
 			return &b
 		}
 	}
+
 	return nil
 }
 

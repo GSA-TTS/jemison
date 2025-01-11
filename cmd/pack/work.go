@@ -11,7 +11,6 @@ import (
 )
 
 func (w *PackWorker) Work(ctx context.Context, job *river.Job[common.PackArgs]) error {
-
 	// It comes in with the GuestbookId. That's all we need (plus the S3 object).
 	s3 := kv.NewS3("extract")
 	key := util.CreateS3Key(util.ToScheme(job.Args.Scheme), job.Args.Host, job.Args.Path, util.JSON)
@@ -20,6 +19,7 @@ func (w *PackWorker) Work(ctx context.Context, job *river.Job[common.PackArgs]) 
 	if err != nil {
 		zap.L().Error("could not fetch object for packing",
 			zap.String("key", s3json.Key.Render()))
+
 		return nil
 	}
 

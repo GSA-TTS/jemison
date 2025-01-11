@@ -19,8 +19,10 @@ type FetchWorker struct {
 	river.WorkerDefaults[common.FetchArgs]
 }
 
+//nolint:lll
 func initX[T river.Worker[U], U river.JobArgs](service_name string, queue_name string, workerStruct T) *river.Client[pgx.Tx] {
 	queueing.InitializeRiverQueues()
+
 	ctx, pool, workers := common.CommonQueueInit()
 
 	// Essentially adds a worker "type" to the work engine.
@@ -42,7 +44,6 @@ func initX[T river.Worker[U], U river.JobArgs](service_name string, queue_name s
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
 		zap.L().Error("could not establish worker pool",
 			zap.String("service_name", service_name),
@@ -56,7 +57,7 @@ func initX[T river.Worker[U], U river.JobArgs](service_name string, queue_name s
 	if err := theClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.",
 			zap.String("queue_name", queue_name))
-		os.Exit(42)
+		os.Exit(1)
 	}
 
 	return theClient
@@ -68,6 +69,7 @@ type ValidateFetchWorker struct {
 
 func (w ValidateFetchWorker) Work(ctx context.Context, job *river.Job[common.ValidateFetchArgs]) error {
 	zap.L().Info("VALIDATE IS RUNNING AND DOING NOTHING")
+
 	return nil
 }
 

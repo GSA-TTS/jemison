@@ -42,9 +42,11 @@ func primeCache() {
 	}
 }
 
+const MIN_LEN_OF_FQDN = 2
+
 func tldAndEscaped(fqdn string) (string, string, error) {
 	pieces := strings.Split(fqdn, ".")
-	if len(pieces) < 2 {
+	if len(pieces) < MIN_LEN_OF_FQDN {
 		return "", "", fmt.Errorf("fqdn is too short: %s", fqdn)
 	}
 

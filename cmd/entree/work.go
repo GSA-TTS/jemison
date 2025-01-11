@@ -18,7 +18,7 @@ import (
 // fullCrawl & !pass: check every timeout in the domain.
 // fullCrawl & pass: re-crawl the whole domain now.
 // !fullCrawl & !pass: check
-// !fullCrawl & pass: fetch the page now
+// !fullCrawl & pass: fetch the page now.
 */
 func (w *EntreeWorker) Work(ctx context.Context, job *river.Job[common.EntreeArgs]) error {
 	var kind string

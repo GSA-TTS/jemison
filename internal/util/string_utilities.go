@@ -30,6 +30,7 @@ func (mt MimeType) EnumIndex() int {
 
 func AtoZOnly(s string) string {
 	var result strings.Builder
+
 	for i := 0; i < len(s); i++ {
 		b := s[i]
 		if ('a' <= b && b <= 'z') ||
@@ -38,6 +39,7 @@ func AtoZOnly(s string) string {
 			result.WriteByte(b)
 		}
 	}
+
 	return result.String()
 }
 
@@ -54,6 +56,7 @@ func CleanMimeType(mime string) string {
 			return m
 		}
 	}
+
 	// The unknown mime type
 	return "application/octet-stream"
 }
@@ -77,6 +80,7 @@ func GetMimeType(path string) string {
 			return mime_type
 		}
 	}
+
 	return m["json"]
 }
 
@@ -86,18 +90,22 @@ func IsSearchableMimeType(mime string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 func CollapseWhitespace(s string) string {
-	var re = regexp.MustCompile(`\s\s+`)
+	re := regexp.MustCompile(`\s\s+`)
+
 	s = strings.TrimSpace(s)
+
 	return re.ReplaceAllString(s, " ")
 }
 
 func TrimSuffix(s, suffix string) string {
 	if strings.HasSuffix(s, suffix) {
 		s = s[:len(s)-len(suffix)]
+
 		return s
 	} else {
 		return s
@@ -110,9 +118,11 @@ func CanonicalizeURL(s string) (string, error) {
 		//nolint:wrapcheck
 		return "", err
 	}
+
 	u.Host = strings.ToLower(u.Host)
 	if len(u.Path) > 1 {
 		u.Path = strings.TrimSuffix(u.Path, "/")
 	}
+
 	return u.Host + u.Path, nil
 }

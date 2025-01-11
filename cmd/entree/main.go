@@ -40,6 +40,7 @@ func main() {
 			zap.L().Error("could not get Domain64 for FQDN", zap.String("fqdn", fqdn))
 		} else {
 			zap.L().Debug("inserting fqdn/d64 to hosts", zap.String("fqdn", fqdn), zap.Int64("d64", d64))
+
 			_, err := JDB.WorkDBQueries.UpsertUniqueHost(context.Background(),
 				work_db.UpsertUniqueHostParams{
 					Domain64: pgtype.Int8{
@@ -52,7 +53,6 @@ func main() {
 						Time:             time.Now().Add(30 * 24 * time.Hour),
 					},
 				})
-
 			if err != nil {
 				zap.L().Error("error upserting domain64 value", zap.Int64("domain64", d64))
 			}

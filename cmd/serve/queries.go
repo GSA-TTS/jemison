@@ -1,6 +1,7 @@
 package main
 
 var _or = " | "
+
 var _and = " & "
 
 type Q interface {
@@ -48,6 +49,7 @@ type Query struct {
 func NewQuery() *Query {
 	q := Query{}
 	q.Queries = make([]Q, 0)
+
 	return &q
 }
 
@@ -64,5 +66,6 @@ func (q *Query) ToString() string {
 			qs += _and
 		}
 	}
+
 	return qs
 }

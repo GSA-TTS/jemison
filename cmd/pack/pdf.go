@@ -10,7 +10,6 @@ import (
 )
 
 func packPdf(s3json *kv.S3JSON) {
-
 	// We have more fields than before.
 	d64, err := config.FQDNToDomain64(s3json.Key.Host)
 	if err != nil {
@@ -27,7 +26,6 @@ func packPdf(s3json *kv.S3JSON) {
 			Tag:      "path",
 			Content:  s3json.GetString("path"),
 		})
-
 	if err != nil {
 		zap.L().Error("could not insert path when packing",
 			zap.String("_key", s3json.GetString("_key")),
@@ -46,7 +44,6 @@ func packPdf(s3json *kv.S3JSON) {
 			Tag:      "title",
 			Content:  s3json.GetString("title") + " (PDF page " + s3json.GetString("pdf_page_number") + ")",
 		})
-
 	if err != nil {
 		zap.L().Error("could not insert title when packing",
 			zap.String("_key", s3json.GetString("_key")),

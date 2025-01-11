@@ -19,9 +19,12 @@ import (
 	"go.uber.org/zap"
 )
 
-var Databases sync.Map //map[string]*sql.DB
+var Databases sync.Map
+
 var ChQSHP = make(chan queueing.QSHP)
+
 var ThisServiceName = "serve"
+
 var JDB *postgres.JemisonDB
 
 func addMetadata(m map[string]any) map[string]any {
@@ -32,8 +35,10 @@ func addMetadata(m map[string]any) map[string]any {
 		})
 	if err != nil {
 		zap.L().Error(err.Error())
+
 		pathCount = 0
 	}
+
 	m["pageCount"] = pathCount
 
 	bodyCount, err := JDB.SearchDBQueries.BodiesInDomain64Range(context.Background(),
@@ -43,16 +48,19 @@ func addMetadata(m map[string]any) map[string]any {
 		})
 	if err != nil {
 		zap.L().Error(err.Error())
+
 		bodyCount = 0
 	}
+
 	m["bodyCount"] = bodyCount
 
 	return m
 }
 
+//nolint:funlen
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
-	//s3 := kv.NewS3(ThisServiceName)
+
 	InitializeQueues()
 
 	go queueing.Enqueue(ChQSHP)

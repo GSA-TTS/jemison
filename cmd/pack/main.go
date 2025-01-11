@@ -13,15 +13,17 @@ import (
 
 var ThisServiceName = "pack"
 
-// var ChFinalize = make(chan string)
 var ChQSHP = make(chan queueing.QSHP)
+
 var PHL *PerHostLock = nil
+
 var JDB *postgres.JemisonDB
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
 
 	InitializeQueues()
+
 	engine := common.InitializeAPI()
 
 	log.Println("environment initialized")
@@ -30,7 +32,6 @@ func main() {
 
 	JDB = postgres.NewJemisonDB()
 
-	//go FinalizeTimer(ChFinalize)
 	go queueing.Enqueue(ChQSHP)
 	go queueing.ClearCompletedPeriodically()
 

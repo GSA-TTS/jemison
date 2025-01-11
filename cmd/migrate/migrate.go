@@ -6,16 +6,15 @@ import (
 	"log"
 	"net/url"
 
-	_ "github.com/amacneil/dbmate/v2/pkg/driver/postgres"
-
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
+	_ "github.com/amacneil/dbmate/v2/pkg/driver/postgres"
 	"go.uber.org/zap"
 )
 
 // Carry our migrations with us as part of the build.
 // This eliminates wondering where they are when we deploy.
-//
+
 //go:embed work_db/db/migrations/*.sql
 var workFS embed.FS
 
@@ -27,9 +26,8 @@ type location struct {
 	MigrationsDir string
 }
 
-// Assumes config has been read
+// Assumes config has been read.
 func MigrateDB(dbUri string, loc location) {
-
 	db1_url, err := env.Env.GetDatabaseUrl(dbUri)
 	if err != nil {
 		zap.L().Fatal("could not get url for",
@@ -42,15 +40,18 @@ func MigrateDB(dbUri string, loc location) {
 	db.MigrationsDir = []string{loc.MigrationsDir}
 
 	log.Println("Migrations:")
+
 	migrations, err := db.FindMigrations()
 	if err != nil {
 		panic(err)
 	}
+
 	for _, m := range migrations {
 		fmt.Println(m.Version, m.FilePath)
 	}
 
 	log.Println("\nApplying...")
+
 	err = db.CreateAndMigrate()
 	if err != nil {
 		panic(err)
