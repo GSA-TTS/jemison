@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var DEBUG_S3JSON = false
+var DebugS3JSON = false
 
 // NewFromBytes(bucket_name string, host string, path string, m []byte) *S3JSON
 // NewEmptyS3JSON(bucket_name string, host string, path string) *S3JSON
@@ -47,8 +47,8 @@ type S3JSON struct {
 	empty bool
 }
 
-func NewS3JSON(bucket_name string) *S3JSON {
-	s3 := newS3FromBucketName(bucket_name)
+func NewS3JSON(bucketName string) *S3JSON {
+	s3 := newS3FromBucketName(bucketName)
 
 	return &S3JSON{
 		Key:   &util.Key{},
@@ -61,26 +61,29 @@ func NewS3JSON(bucket_name string) *S3JSON {
 // NewFromBytes takes a []byte representation of a JSON document and constructs
 // a S3JSON document from it.
 // Inserts _key
-func NewFromBytes(bucket_name string, scheme util.Scheme, host string, path string, m []byte) *S3JSON {
-	s3 := newS3FromBucketName(bucket_name)
+func NewFromBytes(bucketName string, scheme util.Scheme, host string, path string, m []byte) *S3JSON {
+	s3 := newS3FromBucketName(bucketName)
 	key := util.CreateS3Key(scheme, host, path, util.JSON)
-	w_key, _ := sjson.SetBytes(m, "_key", key.Render())
+	wKey, _ := sjson.SetBytes(m, "_key", key.Render())
 
 	return &S3JSON{
 		Key:   key,
-		raw:   w_key,
+		raw:   wKey,
 		S3:    s3,
 		empty: false,
 	}
 }
 
 // Inserts _key
-func NewFromMap(bucket_name string, scheme util.Scheme, host string, path string, m map[string]string) *S3JSON {
-	s3 := newS3FromBucketName(bucket_name)
+func NewFromMap(bucketName string, scheme util.Scheme, host string, path string, m map[string]string) *S3JSON {
+	s3 := newS3FromBucketName(bucketName)
 	key := util.CreateS3Key(scheme, host, path, util.JSON)
 	m["_key"] = key.Render()
 
-	b, _ := json.Marshal(m)
+	b, err := json.Marshal(m)
+	if err != nil {
+		zap.L().Error("could not marshall JSON")
+	}
 
 	return &S3JSON{
 		Key:   key,
@@ -92,8 +95,8 @@ func NewFromMap(bucket_name string, scheme util.Scheme, host string, path string
 
 // Creates a new, empty S3JSON struct, setting it as `empty`.
 // `Load()` must be called on it before we can use it.
-func NewEmptyS3JSON(bucket_name string, scheme util.Scheme, host string, path string) *S3JSON {
-	s3 := newS3FromBucketName(bucket_name)
+func NewEmptyS3JSON(bucketName string, scheme util.Scheme, host string, path string) *S3JSON {
+	s3 := newS3FromBucketName(bucketName)
 	key := util.CreateS3Key(scheme, host, path, util.JSON)
 
 	return &S3JSON{
@@ -173,10 +176,11 @@ func (s3json *S3JSON) Load() error {
 			zap.String("key", key),
 			zap.String("error", err.Error()))
 
+		//nolint:wrapcheck
 		return err
 	}
 
-	if DEBUG_S3JSON {
+	if DebugS3JSON {
 		zap.L().Debug("retrieved S3 object", zap.String("key", key))
 	}
 
@@ -187,13 +191,14 @@ func (s3json *S3JSON) Load() error {
 			zap.String("key", key),
 			zap.String("error", err.Error()))
 
+		//nolint:wrapcheck
 		return err
 	}
 
 	s3json.raw = raw
-	current_mime_type := s3json.GetString("content-type")
+	currentMimeType := s3json.GetString("content-type")
 
-	updated, err := sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(current_mime_type))
+	updated, err := sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(currentMimeType))
 	if err != nil {
 		zap.L().Error("could not update s3json.raw")
 	} else {
@@ -209,29 +214,29 @@ func (s3json *S3JSON) GetJSON() []byte {
 	return s3json.raw
 }
 
-func (s3json *S3JSON) GetString(gjson_path string) string {
-	r := gjson.GetBytes(s3json.raw, gjson_path)
+func (s3json *S3JSON) GetString(gjsonPath string) string {
+	r := gjson.GetBytes(s3json.raw, gjsonPath)
 
 	return r.String()
 }
 
-func (s3json *S3JSON) GetInt64(gjson_path string) int64 {
-	r := gjson.GetBytes(s3json.raw, gjson_path)
+func (s3json *S3JSON) GetInt64(gjsonPath string) int64 {
+	r := gjson.GetBytes(s3json.raw, gjsonPath)
 
 	return int64(r.Int())
 }
 
-func (s3json *S3JSON) GetBool(gjson_path string) bool {
-	r := gjson.GetBytes(s3json.raw, gjson_path)
+func (s3json *S3JSON) GetBool(gjsonPath string) bool {
+	r := gjson.GetBytes(s3json.raw, gjsonPath)
 
 	return r.Bool()
 }
 
-func (s3json *S3JSON) Set(sjson_path string, value string) {
-	b, err := sjson.SetBytes(s3json.raw, sjson_path, value)
+func (s3json *S3JSON) Set(sjsonPath string, value string) {
+	b, err := sjson.SetBytes(s3json.raw, sjsonPath, value)
 	if err != nil {
 		zap.L().Error("could not set JSON path in Set()",
-			zap.String("sjson_path", sjson_path),
+			zap.String("sjson_path", sjsonPath),
 			zap.String("value", value))
 	}
 
@@ -241,32 +246,3 @@ func (s3json *S3JSON) Set(sjson_path string, value string) {
 func (s3json *S3JSON) Size() int64 {
 	return int64(len(s3json.raw))
 }
-
-// type Storage interface {
-// 	Store(string, JSON) error
-// 	List(string) ([]*ObjInfo, error)
-// 	Get(string) (Object, error)
-// }
-
-// func (s3 *S3) StoreFile(destination_key string, source_filename string) error {
-// 	reader, err := os.Open(source_filename)
-// 	if err != nil {
-// 		log.Fatal("KV cannot open file", source_filename)
-// 	}
-// 	fi, err := reader.Stat()
-// 	if err != nil {
-// 		log.Println("KV could not stat file")
-// 		log.Fatal(err)
-// 	}
-
-// 	return store(s3, destination_key, fi.Size(), make(JSON, 0), reader)
-// }
-
-// ////////////////////////////
-// // SUPPORT
-
-// func mapToReader(json_map JSON) (io.Reader, int64) {
-// 	b, _ := json.Marshal(json_map)
-// 	r := bytes.NewReader(b)
-// 	return r, int64(len(b))
-// }

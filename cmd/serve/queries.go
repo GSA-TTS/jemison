@@ -17,29 +17,29 @@ func (qs Qs) String() string {
 }
 
 type OrQ struct {
-	Lhs Q
-	Rhs Q
+	LHS Q
+	RHS Q
 }
 
 func (orq OrQ) String() string {
-	return "(" + orq.Lhs.String() + _or + orq.Rhs.String() + ")"
+	return "(" + orq.LHS.String() + _or + orq.RHS.String() + ")"
 }
 
 func Or(a, b string) Q {
-	return OrQ{Lhs: Qs{Str: a}, Rhs: Qs{Str: b}}
+	return OrQ{LHS: Qs{Str: a}, RHS: Qs{Str: b}}
 }
 
 type AndQ struct {
-	Lhs Q
-	Rhs Q
+	LHS Q
+	RHS Q
 }
 
 func And(a, b string) Q {
-	return AndQ{Lhs: Qs{Str: a}, Rhs: Qs{Str: b}}
+	return AndQ{LHS: Qs{Str: a}, RHS: Qs{Str: b}}
 }
 
 func (andq AndQ) String() string {
-	return andq.Lhs.String() + _and + andq.Rhs.String()
+	return andq.LHS.String() + _and + andq.RHS.String()
 }
 
 type Query struct {
@@ -53,8 +53,8 @@ func NewQuery() *Query {
 	return &q
 }
 
-func (q *Query) AddToQuery(new_q Q) {
-	q.Queries = append(q.Queries, new_q)
+func (q *Query) AddToQuery(newQ Q) {
+	q.Queries = append(q.Queries, newQ)
 }
 
 func (q *Query) ToString() string {

@@ -26,33 +26,33 @@ func ReadConfigJsonnet(sonnetFilename string) string {
 	return json
 }
 
-func ReadJsonConfig(jsonFilename string) string {
-	json_bytes, err := ConfigFs.ReadFile(jsonFilename)
+func ReadJSONConfig(jsonFilename string) string {
+	jsonBytes, err := ConfigFs.ReadFile(jsonFilename)
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
 
-	return string(json_bytes)
+	return string(jsonBytes)
 }
 
 func GetYamlFileReader(yamlFilename string) *bytes.Reader {
-	yaml_bytes, err := ConfigFs.ReadFile(yamlFilename)
+	yamlBytes, err := ConfigFs.ReadFile(yamlFilename)
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
 
-	return bytes.NewReader(yaml_bytes)
+	return bytes.NewReader(yamlBytes)
 }
 
-func GetListOfHosts(allowed_hosts string) []string {
-	zap.L().Debug("reading in hosts", zap.String("allowed_hosts", allowed_hosts))
+func GetListOfHosts(allowedHosts string) []string {
+	zap.L().Debug("reading in hosts", zap.String("allowed_hosts", allowedHosts))
 
-	cfg := ReadJsonConfig("allowed_hosts.yaml")
+	cfg := ReadJSONConfig("allowed_hosts.yaml")
 
 	// The variable `allowed_hosts` will be the key into the doc that has
 	// a list of pairs. Each pair is a range of values, which tells us how
 	// to filter the FQDN/D64 values.
-	ranges := gjson.Get(cfg, allowed_hosts).Array()
+	ranges := gjson.Get(cfg, allowedHosts).Array()
 	hosts := make([]string, 0)
 	set := make(map[string]bool)
 
@@ -79,7 +79,7 @@ func GetListOfHosts(allowed_hosts string) []string {
 }
 
 func GetHostBackend(host, schedule string) string {
-	cfg := ReadJsonConfig(schedule)
+	cfg := ReadJSONConfig(schedule)
 	backend := "postgres"
 
 	for _, section := range gjson.Parse(cfg).Get("@keys").Array() {
@@ -96,36 +96,36 @@ func GetHostBackend(host, schedule string) string {
 	return backend
 }
 
-const HOURS_PER_DAY = 24
+const HoursPerDay = 24
 
-const DAYS_PER_WEEK = 7
+const DaysPerWeek = 7
 
-const DAYS_PER_BIWEEK = 14
+const DaysPerBiWeek = 14
 
-const DAYS_PER_MONTH = 30
+const DaysPerMonth = 30
 
-const DAYS_PER_QUARTER = 3 * 30
+const DaysPerQuarter = 3 * 30
 
-const DAYS_PER_BIANNUM = 6 * 30
+const DaysPerBiAnnum = 6 * 30
 
-const DAYS_PER_ANNUM = 12 * 30
+const DaysPerAnnum = 12 * 30
 
 func SectionToTimestamp(section string, startTime time.Time) time.Time {
 	switch section {
 	case "daily":
-		return startTime.Add(HOURS_PER_DAY * time.Hour)
+		return startTime.Add(HoursPerDay * time.Hour)
 	case "weekly":
-		return startTime.Add(DAYS_PER_WEEK * HOURS_PER_DAY * time.Hour)
+		return startTime.Add(DaysPerWeek * HoursPerDay * time.Hour)
 	case "bi-weekly":
-		return startTime.Add(DAYS_PER_BIWEEK * HOURS_PER_DAY * time.Hour)
+		return startTime.Add(DaysPerBiWeek * HoursPerDay * time.Hour)
 	case "monthly":
-		return startTime.Add(DAYS_PER_MONTH * HOURS_PER_DAY * time.Hour)
+		return startTime.Add(DaysPerMonth * HoursPerDay * time.Hour)
 	case "quarterly":
-		return startTime.Add(DAYS_PER_QUARTER * HOURS_PER_DAY * time.Hour)
+		return startTime.Add(DaysPerQuarter * HoursPerDay * time.Hour)
 	case "bi-annually":
-		return startTime.Add(DAYS_PER_BIANNUM * HOURS_PER_DAY * time.Hour)
+		return startTime.Add(DaysPerBiAnnum * HoursPerDay * time.Hour)
 	default:
 		// We will default to `montly` to be safe
-		return startTime.Add(time.Duration(DAYS_PER_MONTH*HOURS_PER_DAY) * time.Hour)
+		return startTime.Add(time.Duration(DaysPerMonth*HoursPerDay) * time.Hour)
 	}
 }

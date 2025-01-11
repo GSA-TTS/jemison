@@ -22,11 +22,11 @@ import (
 // GLOBAL TO THE APP
 // One pool of connections for River.
 
-const ROUNDROBIN = "round_robin"
+const RoundRobin = "round_robin"
 
-const OPD = "one_per_domain"
+const OnePerDomain = "one_per_domain"
 
-const SIMPLE = "simple"
+const Simple = "simple"
 
 // The work client, doing the work of `fetch`.
 var FetchPool *pgxpool.Pool
@@ -59,7 +59,7 @@ func oneQueuePerHost(workers *river.Workers, workerCount int64) {
 	FetchQueues = make(map[string]river.QueueConfig)
 
 	for _, host := range config.GetListOfHosts(env.Env.AllowedHosts) {
-		asciiHost := stripHostToAscii(host)
+		asciiHost := stripHostToASCII(host)
 		asciiQueueName := fmt.Sprintf("fetch-%s", asciiHost)
 		zap.L().Info("setting up queue", zap.String("queue_name", asciiQueueName))
 
@@ -197,22 +197,22 @@ func InitializeQueues() {
 	queueModel := fetchService.GetParamString("queue_model")
 
 	switch queueModel {
-	case ROUNDROBIN:
-		QueueingModel = ROUNDROBIN
+	case RoundRobin:
+		QueueingModel = RoundRobin
 
 		roundRobinQueues(workers, workerCount)
-	case OPD:
-		QueueingModel = OPD
+	case OnePerDomain:
+		QueueingModel = OnePerDomain
 
 		oneQueuePerHost(workers, workerCount)
-	case SIMPLE:
-		QueueingModel = SIMPLE
+	case Simple:
+		QueueingModel = Simple
 
 		simpleQueue(workers, workerCount)
 	default:
 		zap.L().Warn("falling through to default simple queueing model")
 
-		QueueingModel = SIMPLE
+		QueueingModel = Simple
 
 		simpleQueue(workers, workerCount)
 	}

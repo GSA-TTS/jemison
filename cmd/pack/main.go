@@ -15,7 +15,7 @@ var ThisServiceName = "pack"
 
 var ChQSHP = make(chan queueing.QSHP)
 
-var PHL *PerHostLock = nil
+var PHL *PerHostLock
 
 var JDB *postgres.JemisonDB
 
@@ -36,6 +36,7 @@ func main() {
 	go queueing.ClearCompletedPeriodically()
 
 	// Local and Cloud should both get this from the environment.
+	//nolint:gosec
 	err := http.ListenAndServe(":"+env.Env.Port, engine)
 	if err != nil {
 		zap.Error(err)

@@ -10,34 +10,34 @@ import (
 //go:embed stopwords.txt
 var stopwords string
 
-var each_stopword []string
+var eachStopword []string
 
-var ws_re = regexp.MustCompile(`\s+`)
+var wsRe = regexp.MustCompile(`\s+`)
 
-var punc_re = regexp.MustCompile(`[-_\.!\?,]`)
+var puncRe = regexp.MustCompile(`[-_\.!\?,]`)
 
 func removeStopwords(content string) string {
-	content = ws_re.ReplaceAllString(content, " ")
+	content = wsRe.ReplaceAllString(content, " ")
 	each := strings.Split(content, " ")
-	new_content := make([]string, 0)
+	newContent := make([]string, 0)
 
 	for _, e := range each {
-		e = punc_re.ReplaceAllString(e, " ")
+		e = puncRe.ReplaceAllString(e, " ")
 
-		if !slices.Contains(each_stopword, e) {
-			new_content = append(new_content, e)
+		if !slices.Contains(eachStopword, e) {
+			newContent = append(newContent, e)
 		}
 	}
 
-	return ws_re.ReplaceAllString(strings.Join(new_content, " "), " ")
+	return wsRe.ReplaceAllString(strings.Join(newContent, " "), " ")
 }
 
 func RemoveStopwords(content string) string {
-	if len(each_stopword) > 0 {
-		return removeStopwords(content)
-	} else {
-		each_stopword = strings.Split(stopwords, "\n")
-
+	if len(eachStopword) > 0 {
 		return removeStopwords(content)
 	}
+
+	eachStopword = strings.Split(stopwords, "\n")
+
+	return removeStopwords(content)
 }

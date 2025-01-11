@@ -31,4 +31,4 @@ func (l *SafeLedger) Remove(entry string) {
 	delete(l.Ledger, entry)
 }
 
-var HallPassLedger *SafeLedger = NewSafeLedger()
+var HallPassLedger = NewSafeLedger()

@@ -21,6 +21,7 @@ type QSHP struct {
 	Filename   string
 }
 
+//nolint:revive
 func commonCommit(qshp QSHP, ctx context.Context, tx pgx.Tx) {
 	if err := tx.Commit(ctx); err != nil {
 		err = tx.Rollback(ctx)
@@ -36,7 +37,7 @@ func commonCommit(qshp QSHP, ctx context.Context, tx pgx.Tx) {
 }
 
 //nolint:cyclop,funlen
-func Enqueue(ch_qshp <-chan QSHP) {
+func Enqueue(chQSHP <-chan QSHP) {
 	// Can we leave one connection open for the entire life of a
 	// service? Maybe. Maybe not.
 	_, pool, _ := common.CommonQueueInit()
@@ -49,17 +50,17 @@ func Enqueue(ch_qshp <-chan QSHP) {
 	}
 
 	for {
-		qshp := <-ch_qshp
+		qshp := <-chQSHP
 		ctx, tx := common.CtxTx(pool)
 
-		var queue_to_match string
+		var queueToMatch string
 		if strings.HasPrefix(qshp.Queue, "fetch") {
-			queue_to_match = "fetch"
+			queueToMatch = "fetch"
 		} else {
-			queue_to_match = qshp.Queue
+			queueToMatch = qshp.Queue
 		}
 
-		switch queue_to_match {
+		switch queueToMatch {
 		case "entree":
 			_, err := client.InsertTx(ctx, tx, common.EntreeArgs{
 				Scheme:    qshp.Scheme,

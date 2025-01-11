@@ -1,10 +1,35 @@
 linters:
   enable-all: true
+  # Some things here we may want to leave disabled.
+  # Some we may want to enable, and then pay down as debt.
+  # Anything included here represented a more invasive set of changes to 
+  # satisfy the linter than was desired during initial cleanup.
   disable:
-    - exportloopref
+    - canonicalheader
+    - contextcheck
     - depguard
-    - tagalign
+    - err113
+    - errchkjson
     - exhaustruct
+    - exportloopref
+    - forbidigo
+    - gochecknoglobals
+    - gocritic
+    - intrange
+    - ireturn
+    - musttag
+    - nilerr
+    - noctx
+    - paralleltest
+    - perfsprint
+    - tagalign
+    - tagliatelle
+    - tenv
+    - testifylint
+    - unconvert
+    - unparam
+    - varnamelen
+    - wastedassign
   depguard:
     # Rules to apply.
     #

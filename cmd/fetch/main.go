@@ -30,9 +30,9 @@ var Workers *river.Workers
 
 var MaxFilesize int64
 
-const BYTES_PER_KB = 1024
+const BytesPerKb = 1024
 
-const KB_PER_MB = 1024
+const KbPerMb = 1024
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -41,7 +41,7 @@ func main() {
 	JDB = postgres.NewJemisonDB()
 
 	engine := common.InitializeAPI()
-	ExtendApi(engine)
+	ExtendAPI(engine)
 
 	retryableClient := retryablehttp.NewClient()
 	retryableClient.RetryMax = 10
@@ -55,10 +55,10 @@ func main() {
 	// Pre-compute/lookup the sleep duration for backoff
 	PoliteSleep = service.GetParamInt64("polite_sleep")
 	// 1024KB * 1024B => MB
-	MaxFilesize = service.GetParamInt64("max_filesize_mb") * BYTES_PER_KB * KB_PER_MB
+	MaxFilesize = service.GetParamInt64("max_filesize_mb") * BytesPerKb * KbPerMb
 
-	logger_level := service.GetParamString("debug_level")
-	if logger_level != "debug" {
+	loggerLevel := service.GetParamString("debug_level")
+	if loggerLevel != "debug" {
 		retryableClient.Logger = nil
 	}
 
@@ -72,6 +72,7 @@ func main() {
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))
 	// Local and Cloud should both get this from the environment.
+	//nolint:gosec
 	err := http.ListenAndServe(":"+env.Env.Port, engine)
 	if err != nil {
 		zap.Error(err)

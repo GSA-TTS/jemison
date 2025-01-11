@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var DEBUG_S3 = false
+var DebugS3 = false
 
 // S3 holds a bucket structure (containing VCAP_SERVICES information)
 // and an S3 client connection from the min.io libraries.
@@ -27,16 +27,16 @@ type S3 struct {
 
 // NewS3 creates a new S3 object for the bucket given.
 // Lets us copy files to/from the bucket.
-func NewS3(bucket_name string) *S3 {
-	s3 := newS3FromBucketName(bucket_name)
+func NewS3(bucketName string) *S3 {
+	s3 := newS3FromBucketName(bucketName)
 
 	return &s3
 }
 
-func (s3 *S3) FileToS3(key *util.Key, local_filename string, mime_type string) error {
-	reader, err := os.Open(local_filename)
+func (s3 *S3) FileToS3(key *util.Key, localFilename string, mimeType string) error {
+	reader, err := os.Open(localFilename)
 	if err != nil {
-		log.Fatal("FileToS3 cannot open file ", local_filename)
+		log.Fatal("FileToS3 cannot open file ", localFilename)
 	}
 
 	fi, err := reader.Stat()
@@ -45,13 +45,13 @@ func (s3 *S3) FileToS3(key *util.Key, local_filename string, mime_type string) e
 		log.Fatal(err)
 	}
 
-	return store(s3, key.Render(), fi.Size(), reader, mime_type)
+	return store(s3, key.Render(), fi.Size(), reader, mimeType)
 }
 
-func (s3 *S3) FileToS3Path(key string, local_filename string, mime_type string) error {
-	reader, err := os.Open(local_filename)
+func (s3 *S3) FileToS3Path(key string, localFilename string, mimeType string) error {
+	reader, err := os.Open(localFilename)
 	if err != nil {
-		log.Fatal("FileToS3Path cannot open file ", local_filename)
+		log.Fatal("FileToS3Path cannot open file ", localFilename)
 	}
 
 	fi, err := reader.Stat()
@@ -60,43 +60,45 @@ func (s3 *S3) FileToS3Path(key string, local_filename string, mime_type string) 
 		log.Fatal(err)
 	}
 
-	return store(s3, key, fi.Size(), reader, mime_type)
+	return store(s3, key, fi.Size(), reader, mimeType)
 }
 
-func (s3 *S3) S3ToFile(key *util.Key, local_filename string) error {
+func (s3 *S3) S3ToFile(key *util.Key, localFilename string) error {
 	ctx := context.Background()
 
 	err := s3.MinioClient.FGetObject(
 		ctx,
 		s3.Bucket.CredentialString("bucket"),
 		key.Render(),
-		local_filename,
+		localFilename,
 		minio.GetObjectOptions{})
 	if err != nil {
 		zap.L().Error("could not FGetObject",
 			zap.String("bucket", s3.Bucket.Name),
 			zap.String("key", key.Render()),
-			zap.String("local_filename", local_filename),
+			zap.String("local_filename", localFilename),
 		)
 
+		//nolint:wrapcheck
 		return err
 	}
 
 	return nil
 }
 
-func (s3 *S3) S3PathToFile(path string, local_filename string) error {
+func (s3 *S3) S3PathToFile(path string, localFilename string) error {
 	ctx := context.Background()
 
 	err := s3.MinioClient.FGetObject(
 		ctx,
 		s3.Bucket.CredentialString("bucket"),
 		path,
-		local_filename,
+		localFilename,
 		minio.GetObjectOptions{})
 	if err != nil {
 		zap.Error(err)
 
+		//nolint:wrapcheck
 		return err
 	}
 
@@ -127,10 +129,11 @@ func (s3 *S3) S3PathToS3JSON(key *util.Key) (*S3JSON, error) {
 			zap.String("key", key.Render()),
 			zap.String("error", err.Error()))
 
+		//nolint:wrapcheck
 		return nil, err
 	}
 
-	if DEBUG_S3 {
+	if DebugS3 {
 		zap.L().Debug("retrieved S3 object", zap.String("key", key.Render()))
 	}
 
@@ -141,15 +144,16 @@ func (s3 *S3) S3PathToS3JSON(key *util.Key) (*S3JSON, error) {
 			zap.String("key", key.Render()),
 			zap.String("error", err.Error()))
 
+		//nolint:wrapcheck
 		return nil, err
 	}
 
 	s3json := NewS3JSON(s3.Bucket.Name)
 	s3json.raw = raw
 	s3json.Key = key
-	current_mime_type := s3json.GetString("content-type")
+	currentMIMEType := s3json.GetString("content-type")
 
-	updated, err := sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(current_mime_type))
+	updated, err := sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(currentMIMEType))
 	if err != nil {
 		zap.L().Error("could not update raw S3JSON")
 	} else {

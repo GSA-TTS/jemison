@@ -66,20 +66,20 @@ func main() {
 	go queueing.Enqueue(ChQSHP)
 
 	s, _ := env.Env.GetUserService(ThisServiceName)
-	template_files_path := s.GetParamString("template_files_path")
-	static_files_path := s.GetParamString("static_files_path")
+	templateFilesPath := s.GetParamString("template_files_path")
+	staticFilesPath := s.GetParamString("static_files_path")
 
-	external_host := s.GetParamString("external_host")
-	external_port := s.GetParamInt64("external_port")
+	externalHost := s.GetParamString("external_host")
+	externalPort := s.GetParamInt64("external_port")
 
 	JDB = postgres.NewJemisonDB()
 
 	log.Println("environment initialized")
 
 	zap.L().Info("serve environment",
-		zap.String("template_files_path", template_files_path),
-		zap.String("external_host", external_host),
-		zap.Int64("external_port", external_port),
+		zap.String("template_files_path", templateFilesPath),
+		zap.String("external_host", externalHost),
+		zap.Int64("external_port", externalPort),
 	)
 
 	/////////////////////
@@ -91,12 +91,12 @@ func main() {
 	// engine.GET("/search", func(c *gin.Context) {
 	// 	c.Redirect(http.StatusMovedPermanently, "/search/"+start)
 	// })
-	engine.StaticFS("/static", gin.Dir(static_files_path, true))
+	engine.StaticFS("/static", gin.Dir(staticFilesPath, true))
 	// engine.GET("/search/:host", ServeHost)
 
-	engine.LoadHTMLGlob(template_files_path + "/*")
+	engine.LoadHTMLGlob(templateFilesPath + "/*")
 
-	base_params := gin.H{
+	baseParams := gin.H{
 		"scheme":      "http",
 		"search_host": "localhost",
 		"search_port": "10000",
@@ -104,17 +104,17 @@ func main() {
 
 	engine.GET("/:tld", func(c *gin.Context) {
 		tld := config.GetTLD(c.Param("tld"))
-		d64_start, _ := strconv.ParseInt(fmt.Sprintf("%02x00000000000000", tld), 16, 64)
-		d64_end, _ := strconv.ParseInt(fmt.Sprintf("%02xFFFFFFFFFFFF00", tld), 16, 64)
-		base_params["tld"] = c.Param("tld")
-		delete(base_params, "domain")
-		delete(base_params, "subdomain")
-		base_params["fqdn"] = c.Param("tld")
-		base_params["d64_start"] = d64_start
-		base_params["d64_end"] = d64_end
-		base_params = addMetadata(base_params)
+		d64Start, _ := strconv.ParseInt(fmt.Sprintf("%02x00000000000000", tld), 16, 64)
+		d64End, _ := strconv.ParseInt(fmt.Sprintf("%02xFFFFFFFFFFFF00", tld), 16, 64)
+		baseParams["tld"] = c.Param("tld")
+		delete(baseParams, "domain")
+		delete(baseParams, "subdomain")
+		baseParams["fqdn"] = c.Param("tld")
+		baseParams["d64_start"] = d64Start
+		baseParams["d64_end"] = d64End
+		baseParams = addMetadata(baseParams)
 
-		c.HTML(http.StatusOK, "index.tmpl", base_params)
+		c.HTML(http.StatusOK, "index.tmpl", baseParams)
 	})
 
 	engine.GET("/:tld/:domain", func(c *gin.Context) {
@@ -123,18 +123,18 @@ func main() {
 		start := config.RDomainToDomain64(fmt.Sprintf("%s.%s", tld, domain))
 		zap.L().Debug("rdomain", zap.String("start", start))
 
-		d64_start, _ := strconv.ParseInt(fmt.Sprintf("%s00000000", start), 16, 64)
-		d64_end, _ := strconv.ParseInt(fmt.Sprintf("%sFFFFFF00", start), 16, 64)
+		d64Start, _ := strconv.ParseInt(fmt.Sprintf("%s00000000", start), 16, 64)
+		d64End, _ := strconv.ParseInt(fmt.Sprintf("%sFFFFFF00", start), 16, 64)
 
-		base_params["tld"] = tld
-		base_params["domain"] = domain
-		delete(base_params, "subdomain")
-		base_params["fqdn"] = fmt.Sprintf("%s.%s", domain, tld)
-		base_params["d64_start"] = d64_start
-		base_params["d64_end"] = d64_end
-		base_params = addMetadata(base_params)
+		baseParams["tld"] = tld
+		baseParams["domain"] = domain
+		delete(baseParams, "subdomain")
+		baseParams["fqdn"] = fmt.Sprintf("%s.%s", domain, tld)
+		baseParams["d64_start"] = d64Start
+		baseParams["d64_end"] = d64End
+		baseParams = addMetadata(baseParams)
 
-		c.HTML(http.StatusOK, "index.tmpl", base_params)
+		c.HTML(http.StatusOK, "index.tmpl", baseParams)
 	})
 
 	engine.GET("/:tld/:domain/:subdomain", func(c *gin.Context) {
@@ -143,17 +143,17 @@ func main() {
 		subdomain := c.Param("subdomain")
 		fqdn := fmt.Sprintf("%s.%s.%s", subdomain, domain, tld)
 		start, _ := config.FQDNToDomain64(fqdn)
-		d64_start := start
-		d64_end := start + 1
+		d64Start := start
+		d64End := start + 1
 
-		base_params["tld"] = tld
-		base_params["domain"] = domain
-		base_params["subdomain"] = subdomain
-		base_params["fqdn"] = fqdn
-		base_params["d64_start"] = d64_start
-		base_params["d64_end"] = d64_end
-		base_params = addMetadata(base_params)
-		c.HTML(http.StatusOK, "index.tmpl", base_params)
+		baseParams["tld"] = tld
+		baseParams["domain"] = domain
+		baseParams["subdomain"] = subdomain
+		baseParams["fqdn"] = fqdn
+		baseParams["d64_start"] = d64Start
+		baseParams["d64_end"] = d64End
+		baseParams = addMetadata(baseParams)
+		c.HTML(http.StatusOK, "index.tmpl", baseParams)
 	})
 
 	v1 := engine.Group("/api")
@@ -165,6 +165,7 @@ func main() {
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))
 	// Local and Cloud should both get this from the environment.
+	//nolint:gosec
 	err := http.ListenAndServe(":"+env.Env.Port, engine)
 	if err != nil {
 		zap.Error(err)

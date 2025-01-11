@@ -43,7 +43,8 @@ func NewObject(key string, value JSON) *Obj {
 	}
 
 	size := int64(len(b))
-	mime := ""
+
+	var mime string
 
 	if good, ok := value["content-type"]; !ok {
 		mime = "octet/binary"
@@ -70,7 +71,7 @@ func (o Obj) GetValue(key string) string {
 	return o.value[key]
 }
 
-func (o Obj) GetJson() JSON {
+func (o Obj) GetJSON() JSON {
 	return o.value
 }
 

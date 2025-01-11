@@ -45,7 +45,7 @@ type AllStats struct {
 	services sync.Map
 }
 
-var all_the_stats *AllStats
+var allTheStats *AllStats
 
 type HandlerFunType = func(ctx context.Context, input *StatsInput) (*StatsResponseBody, error)
 
@@ -53,9 +53,9 @@ type StatsResponseBody struct {
 	Body *StatsResponse
 }
 
-func StatsHandler(stats_base string) func(c *gin.Context) {
+func StatsHandler(statsBase string) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		b := NewBaseStats(stats_base)
+		b := NewBaseStats(statsBase)
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"stats":    b.GetAll(),
 			"response": "ok",
@@ -64,15 +64,15 @@ func StatsHandler(stats_base string) func(c *gin.Context) {
 }
 
 func NewBaseStats(service string) *BaseStats {
-	if all_the_stats == nil {
-		all_the_stats = &AllStats{}
+	if allTheStats == nil {
+		allTheStats = &AllStats{}
 	}
 
-	if _, ok := all_the_stats.services.Load(service); !ok {
-		all_the_stats.services.Store(service, &BaseStats{})
+	if _, ok := allTheStats.services.Load(service); !ok {
+		allTheStats.services.Store(service, &BaseStats{})
 	}
 
-	v, _ := all_the_stats.services.Load(service)
+	v, _ := allTheStats.services.Load(service)
 
 	bs, ok := v.(*BaseStats)
 	if !ok {
@@ -104,7 +104,7 @@ func (e *BaseStats) Get(key string) int64 {
 }
 
 func (e *BaseStats) GetAll() map[string]int64 {
-	a_copy := make(map[string]int64, 0)
+	aCopy := make(map[string]int64, 0)
 
 	e.stats.Range(func(key any, v any) bool {
 		val, ok := v.(int64)
@@ -117,12 +117,12 @@ func (e *BaseStats) GetAll() map[string]int64 {
 			zap.L().Error("could not case string")
 		}
 
-		a_copy[k] = val
+		aCopy[k] = val
 
 		return true
 	})
 
-	return a_copy
+	return aCopy
 }
 
 func (e *BaseStats) Increment(key string) {

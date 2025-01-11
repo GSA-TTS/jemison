@@ -21,26 +21,26 @@ import (
 )
 
 // //////////////////////////////////////
-// go_for_a_walk
+// goForAWalk
 //
 //nolint:wsl
-func go_for_a_walk(s3json *kv.S3JSON) {
-	cleaned_mime_type := util.CleanMimeType(s3json.GetString("content-type"))
-	switch cleaned_mime_type {
+func goForAWalk(s3json *kv.S3JSON) {
+	cleanedMIMEType := util.CleanMimeType(s3json.GetString("content-type"))
+	switch cleanedMIMEType {
 	case "text/html":
-		walk_html(s3json)
+		walkHTML(s3json)
 	case "application/pdf":
 		// log.Println("PDFs do not walk")
 	}
 }
 
 // //////////////////////////////////////
-// extract_links
+// extractLinks
 //
 //nolint:cyclop,funlen
-func extract_links(s3json *kv.S3JSON) []*url.URL {
+func extractLinks(s3json *kv.S3JSON) []*url.URL {
 	// Return a unique set
-	link_set := make(map[string]bool)
+	linkSet := make(map[string]bool)
 	// Remove all trailing slashes.
 	links := make([]*url.URL, 0)
 
@@ -89,32 +89,33 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 	// have no links.
 	// zap.L().Debug("doc", zap.String("all", fmt.Sprintln(doc.Text())))
 
-	doc.Find("a[href]").Each(func(ndx int, sel *goquery.Selection) {
+	doc.Find("a[href]").Each(func(_ int, sel *goquery.Selection) {
 		link, exists := sel.Attr("href")
 		//nolint:nestif
 		if exists {
-			link_to_crawl, err := is_crawlable(s3json, link)
+			linkToCrawl, err := isCrawlable(s3json, link)
 			if err != nil {
 				zap.L().Debug("error checking crawlability",
 					zap.String("url", link),
 					zap.String("error", err.Error()))
 			} else {
-				if _, ok := expirable_cache.Get(link_to_crawl); ok {
+				//nolint:revive
+				if _, ok := expirableCache.Get(linkToCrawl); ok {
 					// PASS ON LOGGING IF IT IS A CACHE HIT
 				} else {
 					// CRAWL BOTH HTTPS AND HTTP?
-					if strings.HasPrefix(link_to_crawl, "http") {
-						zap.L().Debug("link to crawl", zap.String("url", link_to_crawl))
-						expirable_cache.Set(link_to_crawl, 0, 0)
+					if strings.HasPrefix(linkToCrawl, "http") {
+						zap.L().Debug("link to crawl", zap.String("url", linkToCrawl))
+						expirableCache.Set(linkToCrawl, 0, 0)
 
-						link_set[link_to_crawl] = true
+						linkSet[linkToCrawl] = true
 					}
 				}
 			}
 		}
 	})
 
-	for link := range link_set {
+	for link := range linkSet {
 		link = trimSuffix(link, "/")
 
 		u, err := url.Parse(link)
@@ -130,9 +131,9 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 }
 
 // //////////////////////////////////////
-// walk_html
-func walk_html(s3json *kv.S3JSON) {
-	links := extract_links(s3json)
+// walkHTML
+func walkHTML(s3json *kv.S3JSON) {
+	links := extractLinks(s3json)
 	zap.L().Debug("walk considering links",
 		zap.Int("count", len(links)))
 
@@ -155,9 +156,9 @@ func walk_html(s3json *kv.S3JSON) {
 // A set of functions applied that, one at a time, decide if a link should
 // be crawled.
 
-const TOO_FEW_PIECES_IN_HOST = 2
+const TooFewPiecesInHost = 2
 
-func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
+func isCrawlable(s3json *kv.S3JSON, link string) (string, error) {
 	base := url.URL{
 		Scheme: s3json.GetString("scheme"),
 		Host:   s3json.GetString("host"),
@@ -199,15 +200,15 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 	}
 
 	pieces := strings.Split(base.Host, ".")
-	if len(pieces) < TOO_FEW_PIECES_IN_HOST {
+	if len(pieces) < TooFewPiecesInHost {
 		return "", errors.New("crawler: link host has too few pieces")
-	} else {
-		tld := pieces[len(pieces)-2] + "." + pieces[len(pieces)-1]
+	}
 
-		// Does the link contain our TLD?
-		if !strings.Contains(lu.Host, tld) {
-			return "", errors.New("crawler: link does not contain the TLD")
-		}
+	tld := pieces[len(pieces)-2] + "." + pieces[len(pieces)-1]
+
+	// Does the link contain our TLD?
+	if !strings.Contains(lu.Host, tld) {
+		return "", errors.New("crawler: link does not contain the TLD")
 	}
 
 	return "", fmt.Errorf("could not decide: %s", link)
@@ -218,15 +219,15 @@ func trimSuffix(s, suffix string) string {
 		s = s[:len(s)-len(suffix)]
 
 		return s
-	} else {
-		return s
 	}
+
+	return s
 }
 
-const MAX_FAILED_ATTEMPTS = 2
+const MaxFailedAttempts = 2
 
-func (w *WalkWorker) Work(ctx context.Context, job *river.Job[common.WalkArgs]) error {
-	if job.Attempt > MAX_FAILED_ATTEMPTS {
+func (w *WalkWorker) Work(_ context.Context, job *river.Job[common.WalkArgs]) error {
+	if job.Attempt > MaxFailedAttempts {
 		zap.L().Warn("walking zombie; dropping",
 			zap.String("host", job.Args.Host), zap.String("path", job.Args.Path))
 
@@ -254,10 +255,10 @@ func (w *WalkWorker) Work(ctx context.Context, job *river.Job[common.WalkArgs]) 
 	// If we're here, we already fetched the content.
 	// So, add ourselves to the cache. Don't re-crawl ourselves
 	// FIXME: figure out if the scheme ends up in the JSON
-	expirable_cache.Set(s3json.Key.Render(), 0, 0)
+	expirableCache.Set(s3json.Key.Render(), 0, 0)
 
 	zap.L().Debug("starting to work walk on", zap.String("url", s3json.URL().String()))
-	go_for_a_walk(s3json)
+	goForAWalk(s3json)
 
 	zap.L().Debug("walk done", zap.String("key", s3json.Key.Render()))
 

@@ -31,14 +31,20 @@ var LastBackoffMap sync.Map
 
 var fetchCount atomic.Int64
 
-const SECONDS_PER_MINUTE = 60
+const SecondsPerMinute = 60
+
+const MinInt32 = -2147483648
+
+const MaxInt32 = 2147483647
 
 func InfoFetchCount() {
 	// Probably should be a config value.
-	ticker := time.NewTicker(SECONDS_PER_MINUTE * time.Second)
+	ticker := time.NewTicker(SecondsPerMinute * time.Second)
 	recent := []int64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	last := int64(0)
 	ndx := 0
+
+	// Defaults to 0 value
+	var last int64
 
 	for {
 		// Wait for the ticker
@@ -50,7 +56,8 @@ func InfoFetchCount() {
 		recent[ndx] = diff
 
 		if last != 0 {
-			var total int64 = 0
+			var total int64
+
 			for _, num := range recent {
 				total += num
 			}
@@ -65,17 +72,17 @@ func InfoFetchCount() {
 	}
 }
 
-func stripHostToAscii(host string) string {
+func stripHostToASCII(host string) string {
 	reg, _ := regexp.Compile("[^a-z]")
 	result := reg.ReplaceAllString(strings.ToLower(host), "")
 
 	return result
 }
 
-const THREE_SECONDS = 3
+const ThreeSeconds = 3
 
-//nolint:cyclop,funlen
-func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]) error {
+//nolint:cyclop,funlen,maintidx
+func (w *FetchWorker) Work(_ context.Context, job *river.Job[common.FetchArgs]) error {
 	u := url.URL{
 		Scheme: job.Args.Scheme,
 		Host:   job.Args.Host,
@@ -100,8 +107,8 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			// If it is "simple" or "round_robin", we do nothing.
 			// If it is "one_per_domain", we need to do something fancy.
 
-			if QueueingModel == OPD {
-				asciiHost := stripHostToAscii(job.Args.Host)
+			if QueueingModel == OnePerDomain {
+				asciiHost := stripHostToASCII(job.Args.Host)
 				asciiQueueName := fmt.Sprintf("fetch-%s", asciiHost)
 				ChQSHP <- queueing.QSHP{
 					Queue:  asciiQueueName,
@@ -130,8 +137,8 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			zap.String("host", job.Args.Host))
 		Gateway.GoodToGo(job.Args.Host)
 
-		if QueueingModel == OPD {
-			asciiHost := stripHostToAscii(job.Args.Host)
+		if QueueingModel == OnePerDomain {
+			asciiHost := stripHostToASCII(job.Args.Host)
 			asciiQueueName := fmt.Sprintf("fetch-%s", asciiHost)
 			ChQSHP <- queueing.QSHP{
 				Queue:  asciiQueueName,
@@ -160,9 +167,9 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	// Now, A1 will come around on the queue again, and if it is time, it
 	// will proceed.
 
-	zap.L().Debug("fetching page content", zap.String("url", host_and_path(job)))
+	zap.L().Debug("fetching page content", zap.String("url", hostAndPath(job)))
 
-	page_json, err := fetch_page_content(job)
+	pageJSON, err := fetchPageContent(job)
 	if err != nil {
 		// The queueing system retries should save us here; bail if we
 		// can't get the content now.
@@ -185,7 +192,7 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	// Update the guestbook
 	lastModified := time.Now()
 
-	if v, ok := page_json["last-modified"]; ok {
+	if v, ok := pageJSON["last-modified"]; ok {
 		t, err := time.Parse(time.RFC1123, v)
 		if err != nil {
 			zap.L().Warn("could not convert last-modified")
@@ -196,16 +203,25 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		}
 	}
 
-	cl, err := strconv.Atoi(page_json["content-length"])
+	cl, err := strconv.Atoi(pageJSON["content-length"])
 	if err != nil {
 		zap.L().Warn("could not convert length to int",
 			zap.String("host", job.Args.Host),
 			zap.String("path", job.Args.Path))
 	}
 
+	// Make sure we stay within int32
+	if cl > MaxInt32 {
+		cl = MaxInt32
+	}
+
+	if cl < MinInt32 {
+		cl = MinInt32
+	}
+
 	scheme := JDB.GetScheme("https")
 
-	contentType := JDB.GetContentType(page_json["content-type"])
+	contentType := JDB.GetContentType(pageJSON["content-type"])
 
 	if err != nil {
 		zap.L().Error("could not fetch page scheme")
@@ -219,16 +235,18 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			zap.String("fqdn", job.Args.Host))
 	}
 
-	next_fetch := JDB.GetNextFetch(job.Args.Host)
+	nextFetch := JDB.GetNextFetch(job.Args.Host)
 
-	guestbook_id, err := JDB.WorkDBQueries.UpdateGuestbookFetch(
+	guestbookID, err := JDB.WorkDBQueries.UpdateGuestbookFetch(
 		context.Background(),
 		work_db.UpdateGuestbookFetchParams{
-			Scheme:        scheme,
-			Domain64:      d64,
-			Path:          job.Args.Path,
+			Scheme:   scheme,
+			Domain64: d64,
+			Path:     job.Args.Path,
+			//nolint:gosec
 			ContentLength: int32(cl),
-			ContentType:   int32(contentType),
+			//nolint:gosec
+			ContentType: int32(contentType),
 			LastModified: pgtype.Timestamp{
 				Valid:            true,
 				InfinityModifier: 0,
@@ -237,12 +255,12 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			LastFetched: pgtype.Timestamp{
 				Valid:            true,
 				InfinityModifier: 0,
-				Time:             JDB.InThePast(THREE_SECONDS * time.Second),
+				Time:             JDB.InThePast(ThreeSeconds * time.Second),
 			},
 			NextFetch: pgtype.Timestamp{
 				Valid:            true,
 				InfinityModifier: 0,
-				Time:             next_fetch,
+				Time:             nextFetch,
 			},
 		})
 	if err != nil {
@@ -252,13 +270,13 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	}
 
 	// Save the metadata about this page to S3
-	page_json["guestbook_id"] = fmt.Sprintf("%d", guestbook_id)
+	pageJSON["guestbook_id"] = fmt.Sprintf("%d", guestbookID)
 	cloudmap := kv.NewFromMap(
 		ThisServiceName,
 		util.ToScheme(job.Args.Scheme),
 		job.Args.Host,
 		job.Args.Path,
-		page_json,
+		pageJSON,
 	)
 	err = cloudmap.Save()
 	// We get an error if we can't write to S3

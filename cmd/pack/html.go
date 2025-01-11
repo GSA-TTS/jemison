@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func packHtml(s3json *kv.S3JSON) {
+func packHTML(s3json *kv.S3JSON) {
 	// We have more fields than before.
 	d64, err := config.FQDNToDomain64(s3json.Key.Host)
 	if err != nil {

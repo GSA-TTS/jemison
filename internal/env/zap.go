@@ -28,33 +28,33 @@ var ZapLogger *zap.Logger
 // 	l.WithFields(keysAndValues).Warn(msg)
 // }
 
-func createLogger(this_service string) *zap.Logger {
+func createLogger(thisService string) *zap.Logger {
 	encoderCfg := zap.NewProductionEncoderConfig()
 	encoderCfg.TimeKey = "timestamp"
 	encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
 
 	// level := strings.ToLower(os.Getenv("DEBUG_LEVEL"))
 	// WARNING: THIS MUST RUN AFTER THE ENV IS PARSED/SET UP
-	s, _ := Env.GetUserService(this_service)
+	s, _ := Env.GetUserService(thisService)
 	level := s.GetParamString("debug_level")
 
-	var zap_level zapcore.Level
+	var zapLevel zapcore.Level
 
 	switch level {
 	case "debug":
-		zap_level = zap.DebugLevel
+		zapLevel = zap.DebugLevel
 	case "info":
-		zap_level = zap.InfoLevel
+		zapLevel = zap.InfoLevel
 	case "warn":
-		zap_level = zap.WarnLevel
+		zapLevel = zap.WarnLevel
 	case "error":
-		zap_level = zap.ErrorLevel
+		zapLevel = zap.ErrorLevel
 	default:
-		zap_level = zap.InfoLevel
+		zapLevel = zap.InfoLevel
 	}
 
 	config := zap.Config{
-		Level:             zap.NewAtomicLevelAt(zap_level),
+		Level:             zap.NewAtomicLevelAt(zapLevel),
 		Development:       false,
 		DisableCaller:     false,
 		DisableStacktrace: false,
@@ -80,7 +80,7 @@ func createLogger(this_service string) *zap.Logger {
 	return zap.Must(logger, nil)
 }
 
-func SetupLogging(this_service string) {
-	ZapLogger = createLogger(this_service)
+func SetupLogging(thisService string) {
+	ZapLogger = createLogger(thisService)
 	zap.ReplaceGlobals(zap.Must(ZapLogger, nil))
 }

@@ -19,12 +19,14 @@ func setup( /* t *testing.T */ ) func(t *testing.T) {
 	os.Setenv("ENV", "LOCALHOST")
 	env.InitGlobalEnv("testing_env") // we need to pass something
 
-	return func(t *testing.T) {
+	return func(_ *testing.T) {
 	}
 }
 
 // TestHelloName calls greetings.Hello with a name, checking
 // for a valid return value.
+//
+//nolint:revive
 func TestKv(t *testing.T) {
 	setup()
 	log.Println(env.Env.ObjectStores)

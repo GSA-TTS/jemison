@@ -27,14 +27,14 @@ type location struct {
 }
 
 // Assumes config has been read.
-func MigrateDB(dbUri string, loc location) {
-	db1_url, err := env.Env.GetDatabaseUrl(dbUri)
+func MigrateDB(dbURI string, loc location) {
+	db1URL, err := env.Env.GetDatabaseURL(dbURI)
 	if err != nil {
 		zap.L().Fatal("could not get url for",
-			zap.String("URI", dbUri))
+			zap.String("URI", dbURI))
 	}
 
-	u, _ := url.Parse(db1_url)
+	u, _ := url.Parse(db1URL)
 	db := dbmate.New(u)
 	db.FS = loc.FS
 	db.MigrationsDir = []string{loc.MigrationsDir}

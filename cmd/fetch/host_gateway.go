@@ -48,15 +48,16 @@ func (hsm *HostGateway) GoodToGo(host string) bool {
 		// If we were good to go, we updated the map, and should let things continue.
 		// Otherwise, return false and this will be requeued.
 		return isGoodToGo
-	} else /* not OK */ {
-		// We have not seen this host before
-		// Therefore, add them to the map, and they're good to go.
-		zap.L().Debug("gateway: host never seen before")
-
-		hsm.last[host] = time.Now()
-
-		return true
 	}
+
+	/* not OK */
+	// We have not seen this host before
+	// Therefore, add them to the map, and they're good to go.
+	zap.L().Debug("gateway: host never seen before")
+
+	hsm.last[host] = time.Now()
+
+	return true
 }
 
 func (hsm *HostGateway) HostExists(host string) bool {
@@ -85,12 +86,12 @@ func (hsm *HostGateway) TimeRemaining(host string) time.Duration {
 
 		if until > 0 {
 			return until
-		} else {
-			return time.Duration(0 * time.Millisecond)
 		}
-	} else {
-		// If someone asks for a host that is not in the map, we'll tell them
-		// there are 0 milliseconds until the host is ready.
+
 		return time.Duration(0 * time.Millisecond)
 	}
+
+	// If someone asks for a host that is not in the map, we'll tell them
+	// there are 0 milliseconds until the host is ready.
+	return time.Duration(0 * time.Millisecond)
 }

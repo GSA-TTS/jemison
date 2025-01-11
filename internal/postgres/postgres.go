@@ -28,13 +28,13 @@ func NewJemisonDB() *JemisonDB {
 		Pool:   make(map[string]*pgxpool.Pool),
 	}
 
-	for _, db_name := range []string{env.QueueDatabase, env.JemisonWorkDatabase, env.SearchDatabase} {
-		db_string, err := env.Env.GetDatabaseUrl(db_name)
+	for _, dbName := range []string{env.QueueDatabase, env.JemisonWorkDatabase, env.SearchDatabase} {
+		dbString, err := env.Env.GetDatabaseURL(dbName)
 		if err != nil {
-			zap.L().Fatal("could not get db URL", zap.String("db_name", db_name))
+			zap.L().Fatal("could not get db URL", zap.String("db_name", dbName))
 		}
 
-		cfg := Config(db_string)
+		cfg := Config(dbString)
 		// Create database connection
 		pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
 		if err != nil {
@@ -47,8 +47,8 @@ func NewJemisonDB() *JemisonDB {
 			zap.L().Error(err.Error())
 		}
 
-		jdb.Config[db_name] = cfg
-		jdb.Pool[db_name] = pool
+		jdb.Config[dbName] = cfg
+		jdb.Pool[dbName] = pool
 	}
 
 	jdb.WorkDBQueries = work_db.New(jdb.Pool[env.JemisonWorkDatabase])
@@ -57,7 +57,7 @@ func NewJemisonDB() *JemisonDB {
 	return &jdb
 }
 
-func Config(db_string string) *pgxpool.Config {
+func Config(dbString string) *pgxpool.Config {
 	const defaultMaxConns = int32(100)
 
 	const defaultMinConns = int32(0)
@@ -70,7 +70,7 @@ func Config(db_string string) *pgxpool.Config {
 
 	const defaultConnectTimeout = time.Second * 5
 
-	dbConfig, err := pgxpool.ParseConfig(db_string)
+	dbConfig, err := pgxpool.ParseConfig(dbString)
 	if err != nil {
 		log.Fatal("Failed to create a config, error: ", err)
 	}
@@ -92,50 +92,50 @@ func Config(db_string string) *pgxpool.Config {
 //nolint:gosec
 func (jdb *JemisonDB) GetScheme(scheme string) int32 {
 	if val, ok := jdb.constCache.Load("scheme:" + scheme); ok {
-		v, assert_ok := val.(int32)
-		if !assert_ok {
+		v, assertOK := val.(int32)
+		if !assertOK {
 			zap.L().Error("could not convert scheme integer")
 		}
 
 		return v
-	} else {
-		scheme_int := config.GetScheme(scheme)
-		// This is a guaranteed save conversion
-		jdb.constCache.Store("scheme:"+scheme, int32(scheme_int))
-
-		return int32(scheme_int)
 	}
+
+	schemeInt := config.GetScheme(scheme)
+	// This is a guaranteed save conversion
+	jdb.constCache.Store("scheme:"+scheme, int32(schemeInt))
+
+	return int32(schemeInt)
 }
 
 func (jdb *JemisonDB) GetContentType(ct string) int {
 	if val, ok := jdb.constCache.Load("contenttype:" + ct); ok {
-		v, assert_ok := val.(int)
-		if !assert_ok {
+		v, assertOK := val.(int)
+		if !assertOK {
 			zap.L().Error("could not convert content type integer")
 		}
 
 		return v
-	} else {
-		ct_int := config.GetContentType(ct)
-		jdb.constCache.Store("contenttype:"+ct, ct_int)
-
-		return ct_int
 	}
+
+	ctInt := config.GetContentType(ct)
+	jdb.constCache.Store("contenttype:"+ct, ctInt)
+
+	return ctInt
 }
 
-const HOURS_PER_DAY = 24
+const HoursPerDay = 24
 
-const DAYS_PER_WEEK = 7
+const DaysPerWeek = 7
 
-const DAYS_PER_BIWEEK = 14
+const DaysPerBiWeek = 14
 
-const DAYS_PER_MONTH = 30
+const DaysPerMonth = 30
 
-const DAYS_PER_QUARTER = 3 * 30
+const DaysPerQuarter = 3 * 30
 
-const DAYS_PER_BIANNUM = 6 * 30
+const DaysPerBiAnnum = 6 * 30
 
-const DAYS_PER_ANNUM = 12 * 30
+const DaysPerAnnum = 12 * 30
 
 func (jdb *JemisonDB) GetNextFetch(fqdn string) time.Time {
 	var delta time.Duration
@@ -144,27 +144,29 @@ func (jdb *JemisonDB) GetNextFetch(fqdn string) time.Time {
 
 	switch schedule {
 	case config.Daily:
-		delta = time.Duration(HOURS_PER_DAY * time.Hour)
+		delta = time.Duration(HoursPerDay * time.Hour)
 	case config.Weekly:
-		delta = time.Duration(DAYS_PER_WEEK * HOURS_PER_DAY * time.Hour)
+		delta = time.Duration(DaysPerWeek * HoursPerDay * time.Hour)
 	case config.BiWeekly:
-		delta = time.Duration(DAYS_PER_BIWEEK * HOURS_PER_DAY * time.Hour)
+		delta = time.Duration(DaysPerBiWeek * HoursPerDay * time.Hour)
 	case config.Monthly:
-		delta = time.Duration(DAYS_PER_MONTH * HOURS_PER_DAY * time.Hour)
+		delta = time.Duration(DaysPerMonth * HoursPerDay * time.Hour)
 	case config.Quarterly:
-		delta = time.Duration(DAYS_PER_QUARTER * HOURS_PER_DAY * time.Hour)
+		delta = time.Duration(DaysPerQuarter * HoursPerDay * time.Hour)
 	case config.BiAnnually:
-		delta = time.Duration(DAYS_PER_BIANNUM * HOURS_PER_DAY * time.Hour)
+		delta = time.Duration(DaysPerBiAnnum * HoursPerDay * time.Hour)
 	case config.Annually:
-		delta = time.Duration(DAYS_PER_ANNUM * HOURS_PER_DAY * time.Hour)
+		delta = time.Duration(DaysPerAnnum * HoursPerDay * time.Hour)
+	case config.Default:
+		delta = time.Duration(DaysPerMonth * HoursPerDay * time.Hour)
 	default:
 		// Default to monthly.
-		delta = time.Duration(DAYS_PER_MONTH * HOURS_PER_DAY * time.Hour)
+		delta = time.Duration(DaysPerMonth * HoursPerDay * time.Hour)
 	}
 
-	next_fetch := time.Now().Add(delta)
+	nextFetch := time.Now().Add(delta)
 
-	return next_fetch
+	return nextFetch
 }
 
 func (jdb *JemisonDB) InThePast(delta time.Duration) time.Time {

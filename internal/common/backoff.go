@@ -36,16 +36,16 @@ func BackoffLoop(host string, politeSleep int64, lastHitMap *sync.Map, lastBacko
 			time.Sleep(time.Duration(newBackoffTime) * time.Second)
 
 			continue
-		} else {
-			// We're not in the map, or it is more than <polite> milliseconds!
-			// IT IS OUR TURN.
-			// Reset the times and get out of here.
-			zap.L().Debug("freedom: left the backoff loop",
-				zap.String("host", host))
-			lastBackoffMap.Store(host, politeSleep)
-			lastHitMap.Store(host, time.Now())
-
-			break
 		}
+
+		// We're not in the map, or it is more than <polite> milliseconds!
+		// IT IS OUR TURN.
+		// Reset the times and get out of here.
+		zap.L().Debug("freedom: left the backoff loop",
+			zap.String("host", host))
+		lastBackoffMap.Store(host, politeSleep)
+		lastHitMap.Store(host, time.Now())
+
+		break
 	}
 }

@@ -20,7 +20,7 @@ type FetchRequestInput struct {
 	Scheme string `json:"scheme" maxLength:"10" doc:"Resource scheme"`
 	Host   string `json:"host" maxLength:"500" doc:"Host of resource"`
 	Path   string `json:"path" maxLength:"1500" doc:"Path to resource"`
-	ApiKey string `json:"api-key"`
+	APIKey string `json:"api-key"`
 }
 
 // https://dev.to/kashifsoofi/rest-api-with-go-chi-and-inmemory-store-43ag
@@ -30,7 +30,7 @@ func FetchRequestHandler(c *gin.Context) {
 		return
 	}
 
-	if fri.ApiKey == os.Getenv("API_KEY") || true {
+	if fri.APIKey == os.Getenv("API_KEY") || true {
 		zap.L().Debug("fetch enqueue",
 			zap.String("host", fri.Host),
 			zap.String("path", fri.Path))
@@ -57,7 +57,7 @@ func EntreeRequestHandler(c *gin.Context) {
 		return
 	}
 
-	if fri.ApiKey == os.Getenv("API_KEY") || true {
+	if fri.APIKey == os.Getenv("API_KEY") || true {
 		hallPassB := false
 		fullB := false
 
@@ -96,7 +96,7 @@ func PackRequestHandler(c *gin.Context) {
 		return
 	}
 
-	if fri.ApiKey == os.Getenv("API_KEY") || true {
+	if fri.APIKey == os.Getenv("API_KEY") || true {
 		zap.L().Debug("pack enqueue",
 			zap.String("host", fri.Host))
 
@@ -136,6 +136,7 @@ func main() {
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))
 	// Local and Cloud should both get this from the environment.
+	//nolint:gosec
 	err := http.ListenAndServe(":"+env.Env.Port, engine)
 	if err != nil {
 		zap.Error(err)

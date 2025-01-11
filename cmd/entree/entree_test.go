@@ -221,11 +221,11 @@ func TestSetGuestbookFetchToYesterdayForHost2(t *testing.T) {
 
 func GetQueuesDb() (*work_db.Queries, context.Context, *pgx.Conn) {
 	ctx := context.Background()
-	db_string, err := env.Env.GetDatabaseUrl(env.QueueDatabase)
+	dbString, err := env.Env.GetDatabaseURL(env.QueueDatabase)
 	if err != nil {
 		zap.L().Fatal("could not get db URL for queues-db")
 	}
-	conn, err := pgx.Connect(ctx, db_string)
+	conn, err := pgx.Connect(ctx, dbString)
 	if err != nil {
 		zap.L().Fatal("could not connect to queues-db")
 	}
@@ -235,11 +235,11 @@ func GetQueuesDb() (*work_db.Queries, context.Context, *pgx.Conn) {
 
 func GetWorkDB() (*work_db.Queries, context.Context, *pgx.Conn) {
 	ctx := context.Background()
-	db_string, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
+	dbString, err := env.Env.GetDatabaseURL(env.JemisonWorkDatabase)
 	if err != nil {
 		zap.L().Fatal("could not get db URL for work-db")
 	}
-	conn, err := pgx.Connect(ctx, db_string)
+	conn, err := pgx.Connect(ctx, dbString)
 	if err != nil {
 		zap.L().Fatal("could not connect to work-db")
 	}

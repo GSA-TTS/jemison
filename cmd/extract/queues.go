@@ -38,7 +38,7 @@ func InitializeQueues() {
 	river.AddWorker(workers, &ExtractWorker{})
 
 	// Grab the number of workers from the config.
-	extract_service, err := env.Env.GetUserService("extract")
+	extractService, err := env.Env.GetUserService("extract")
 	if err != nil {
 		zap.L().Error("could not fetch service config")
 		log.Println(err)
@@ -48,7 +48,7 @@ func InitializeQueues() {
 	// Work client
 	extractClient, err = river.NewClient(riverpgxv5.New(extractPool), &river.Config{
 		Queues: map[string]river.QueueConfig{
-			"extract": {MaxWorkers: int(extract_service.GetParamInt64("workers"))},
+			"extract": {MaxWorkers: int(extractService.GetParamInt64("workers"))},
 		},
 		Workers: workers,
 	})

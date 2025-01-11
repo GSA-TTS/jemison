@@ -58,8 +58,8 @@ func GetTLD(tld string) int {
 func IntToTld(i int) string {
 	primeConstants()
 
-	search_string := "ConstToTld." + fmt.Sprintf("%x", i)
-	v := gjson.GetBytes(cachedConstants, search_string).String()
+	searchString := "ConstToTld." + fmt.Sprintf("%x", i)
+	v := gjson.GetBytes(cachedConstants, searchString).String()
 
 	return v
 }

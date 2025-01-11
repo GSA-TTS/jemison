@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-var skippable_prefixes = []string{"#", "mailto"}
+var skippablePrefixes = []string{"#", "mailto"}
 
-var skippable_extensions = []string{
+var skippableExtensions = []string{
 	"acc",
 	"bmp",
 	"doc",
@@ -34,13 +34,13 @@ var skippable_extensions = []string{
 	"xlsx",
 }
 
-const IS_TOO_SHORT_MIN = 5
+const IsTooShortMin = 5
 
-const EXCEEDS_LENGTH_MAX = 200
+const ExceedsLengthMax = 200
 
-const TOO_MANY_REPEATS_LEN = 8
+const TooManyRepeatsLen = 8
 
-const TOO_MANY_REPEATS_COUNT = 50
+const TooManyRepeatsCount = 50
 
 func exceedsLength(length int) func(*url.URL) error {
 	return func(u *url.URL) error {
@@ -52,7 +52,7 @@ func exceedsLength(length int) func(*url.URL) error {
 	}
 }
 
-func hasSlashHttp(u *url.URL) error {
+func hasSlashHTTP(u *url.URL) error {
 	m, _ := regexp.MatchString(`/http`, u.Path)
 	if m {
 		return fmt.Errorf("http in middle of url: %s", u.Path)
@@ -81,7 +81,7 @@ func isTooShort(length int) func(*url.URL) error {
 }
 
 func hasSkippablePrefixRelative(u *url.URL) error {
-	for _, sp := range skippable_prefixes {
+	for _, sp := range skippablePrefixes {
 		if strings.HasPrefix(u.String(), sp) {
 			return fmt.Errorf("skippable prefix [%s]: %s", sp, u.Path)
 		}
@@ -91,7 +91,7 @@ func hasSkippablePrefixRelative(u *url.URL) error {
 }
 
 func hasSkippableExtension(u *url.URL) error {
-	for _, ext := range skippable_extensions {
+	for _, ext := range skippableExtensions {
 		if strings.HasSuffix(u.Path, ext) {
 			return fmt.Errorf("skippable extension [%s]: %s", ext, u.Path)
 		}
@@ -143,7 +143,7 @@ func endsWithWrongSlash(u *url.URL) error {
 	return nil
 }
 
-var all string = ".*"
+var all = ".*"
 
 func GeneralRules() []Rule {
 	rules := make([]Rule, 0)
@@ -157,13 +157,13 @@ func GeneralRules() []Rule {
 	rules = append(rules, Rule{
 		Match:  all,
 		Msg:    "max isTooShort 5",
-		Reject: isTooShort(IS_TOO_SHORT_MIN),
+		Reject: isTooShort(IsTooShortMin),
 	})
 
 	rules = append(rules, Rule{
 		Match:  all,
 		Msg:    "exceedsLength 200",
-		Reject: exceedsLength(EXCEEDS_LENGTH_MAX),
+		Reject: exceedsLength(ExceedsLengthMax),
 	})
 
 	rules = append(rules, Rule{
@@ -175,7 +175,7 @@ func GeneralRules() []Rule {
 	rules = append(rules, Rule{
 		Match:  all,
 		Msg:    "hasSlashHttp",
-		Reject: hasSlashHttp,
+		Reject: hasSlashHTTP,
 	})
 
 	rules = append(rules, Rule{
@@ -199,7 +199,7 @@ func GeneralRules() []Rule {
 	rules = append(rules, Rule{
 		Match:  all,
 		Msg:    "hasTooManyRepeats",
-		Reject: hasTooManyRepeats(TOO_MANY_REPEATS_LEN, TOO_MANY_REPEATS_COUNT),
+		Reject: hasTooManyRepeats(TooManyRepeatsLen, TooManyRepeatsCount),
 	})
 
 	return rules

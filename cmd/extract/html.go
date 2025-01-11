@@ -21,7 +21,7 @@ import (
 // https://alexgarcia.xyz/sqlite-vec/go.html
 // https://www.zenrows.com/blog/goquery
 
-func scrape_sel(sel *goquery.Selection) string {
+func scrapeSel(sel *goquery.Selection) string {
 	txt := sel.Text()
 	repl := strings.ToLower(txt)
 
@@ -33,9 +33,9 @@ func _getTitle(doc *goquery.Document) string {
 	// It turns out there are title tags elsewhere in the doc.
 	title := ""
 
-	doc.Find("title").Each(func(ndx int, sel *goquery.Selection) {
+	doc.Find("title").Each(func(_ int, sel *goquery.Selection) {
 		if title == "" {
-			title = scrape_sel(sel)
+			title = scrapeSel(sel)
 		}
 	})
 
@@ -58,8 +58,8 @@ func _getHeaders(doc *goquery.Document) map[string][]string {
 	} {
 		accum := make([]string, 0)
 
-		doc.Find(tag).Each(func(ndx int, sel *goquery.Selection) {
-			accum = append(accum, util.CollapseWhitespace(scrape_sel(sel)))
+		doc.Find(tag).Each(func(_ int, sel *goquery.Selection) {
+			accum = append(accum, util.CollapseWhitespace(scrapeSel(sel)))
 		})
 
 		headers[tag] = accum
@@ -92,9 +92,9 @@ func _getBodyContent(doc *goquery.Document) string {
 		"i",
 	} {
 		// zap.L().Debug("looking for", zap.String("elem", elem))
-		doc.Find(elem).Each(func(ndx int, sel *goquery.Selection) {
+		doc.Find(elem).Each(func(_ int, sel *goquery.Selection) {
 			// zap.L().Debug("element", zap.String("sel", scrape_sel(sel)))
-			content += scrape_sel(sel)
+			content += scrapeSel(sel)
 		})
 	}
 
@@ -103,26 +103,26 @@ func _getBodyContent(doc *goquery.Document) string {
 }
 
 // //////////////////
-// extractHtml loads the following keys into the JSON
+// extractHTML loads the following keys into the JSON
 //
 // * title: string
 // * headers: []string (as JSON)
 // * body : string
 //
 //nolint:funlen
-func extractHtml(obj *kv.S3JSON) {
+func extractHTML(obj *kv.S3JSON) {
 	rawFilename := uuid.NewString()
 	// The file is not in this service... it's in the `fetch` bucket.`
 	s3 := kv.NewS3("fetch")
 
-	raw_key := obj.Key.Copy()
-	raw_key.Extension = util.Raw
-	zap.L().Debug("looking up raw key", zap.String("raw_key", raw_key.Render()))
+	rawKey := obj.Key.Copy()
+	rawKey.Extension = util.Raw
+	zap.L().Debug("looking up raw key", zap.String("raw_key", rawKey.Render()))
 
-	err := s3.S3ToFile(raw_key, rawFilename)
+	err := s3.S3ToFile(rawKey, rawFilename)
 	if err != nil {
 		zap.L().Error("could not create tempfile from s3",
-			zap.String("raw_key", raw_key.Render()),
+			zap.String("raw_key", rawKey.Render()),
 			zap.String("rawfile", rawFilename))
 	}
 
@@ -142,7 +142,7 @@ func extractHtml(obj *kv.S3JSON) {
 	if err != nil {
 		zap.L().Error("cannot create new doc from raw file",
 			zap.String("rawFilename", rawFilename),
-			zap.String("rawKey", raw_key.Render()))
+			zap.String("rawKey", rawKey.Render()))
 
 		return
 	}
@@ -156,10 +156,10 @@ func extractHtml(obj *kv.S3JSON) {
 		zap.Int("content length", len(content)))
 
 	// Store everything
-	copied_key := obj.Key.Copy()
-	copied_key.Extension = util.JSON
+	copiedKey := obj.Key.Copy()
+	copiedKey.Extension = util.JSON
 	// This is because we were holding an object from the "fetch" bucket.
-	new_obj := kv.NewFromBytes(
+	newObj := kv.NewFromBytes(
 		ThisServiceName,
 		obj.Key.Scheme,
 		obj.Key.Host,
@@ -167,7 +167,7 @@ func extractHtml(obj *kv.S3JSON) {
 		obj.GetJSON())
 
 	// Load up the object
-	new_obj.Set("title", title)
+	newObj.Set("title", title)
 	// Marshal headers to JSON
 	jsonString, err := json.Marshal(headers)
 	if err != nil {
@@ -176,12 +176,12 @@ func extractHtml(obj *kv.S3JSON) {
 		return
 	}
 
-	new_obj.Set("headers", string(jsonString))
-	new_obj.Set("body", content)
+	newObj.Set("headers", string(jsonString))
+	newObj.Set("body", content)
 
-	err = new_obj.Save()
+	err = newObj.Save()
 	if err != nil {
-		zap.L().Error("could not save object", zap.String("key", new_obj.Key.Render()))
+		zap.L().Error("could not save object", zap.String("key", newObj.Key.Render()))
 	}
 
 	// Enqueue next steps

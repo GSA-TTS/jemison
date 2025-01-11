@@ -8,13 +8,13 @@ import (
 	"go.uber.org/zap"
 )
 
-const PERIODIC_CLEANUP_MINUTES = 10
+const PeriodicCleanupMinutes = 10
 
 func ClearCompletedPeriodically() {
 	_, pool, _ := common.CommonQueueInit()
 	defer pool.Close()
 
-	ticker := time.NewTicker(PERIODIC_CLEANUP_MINUTES * time.Minute)
+	ticker := time.NewTicker(PeriodicCleanupMinutes * time.Minute)
 
 	for {
 		<-ticker.C

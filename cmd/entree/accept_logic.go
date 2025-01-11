@@ -12,9 +12,9 @@ import (
 	"go.uber.org/zap"
 )
 
-const SINGLE_PASS = "single"
+const SinglePass = "single"
 
-const FULL_PASS = "full"
+const FullPass = "full"
 
 // The front line of questions involve whether or not
 // it is a single URL and if there is a hall pass.
@@ -52,47 +52,47 @@ func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) (*EntreeChec
 }
 
 func EvaluateEntree(ec *EntreeCheck) {
-	it_shall_pass := false
+	itShallPass := false
 
 	if IsSingleWithPass(ec) {
 		zap.L().Debug("is-single-with-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
 
-		it_shall_pass = true
+		itShallPass = true
 	} else if IsSingleNoPass(ec) {
 		zap.L().Debug("is-single-no-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
 
-		it_shall_pass = true
+		itShallPass = true
 	} else if IsFullWithPass(ec) {
 		zap.L().Debug("is-full-with-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
 		SetHostNextFetchToYesterday(ec)
 		SetGuestbookFetchToYesterdayForHost(ec)
 
-		it_shall_pass = true
+		itShallPass = true
 	} else if IsFullNoPass(ec) {
 		zap.L().Debug("is-full-no-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
 
-		it_shall_pass = true
+		itShallPass = true
 	} else {
 		zap.L().Debug("no entree evaluation criteria met",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
 
-		it_shall_pass = false
+		itShallPass = false
 	}
 
 	// FIXME: We set the fetch to yesterday, then set it to now (below)?
 	// This feels wrong. Redundant. One of these is not needed?
 	// Or... is it necessary with multiple workers? Probably.
 
-	if it_shall_pass {
+	if itShallPass {
 		// We need to update the guestbook now, because we will end up re-walking
 		// the page if we don't. This is true in each case.
 		// Fetch will update a second time.
 		scheme := JDB.GetScheme(ec.Scheme)
-		next_fetch := JDB.GetNextFetch(ec.Host)
+		nextFetch := JDB.GetNextFetch(ec.Host)
 
 		_, err := JDB.WorkDBQueries.UpdateGuestbookNextFetch(context.Background(),
 			work_db.UpdateGuestbookNextFetchParams{
@@ -100,7 +100,7 @@ func EvaluateEntree(ec *EntreeCheck) {
 				Domain64: ec.Domain64,
 				Path:     ec.Path,
 				NextFetch: pgtype.Timestamp{
-					Time:             next_fetch,
+					Time:             nextFetch,
 					Valid:            true,
 					InfinityModifier: 0,
 				},
@@ -130,7 +130,7 @@ func EvaluateEntree(ec *EntreeCheck) {
 func IsSingleWithPass(ec *EntreeCheck) bool {
 	// This just allows us to queue this onward to `fetch`.
 	// Fetch will handle guestbook updates.
-	return ec.Kind == SINGLE_PASS && ec.HallPass
+	return ec.Kind == SinglePass && ec.HallPass
 }
 
 // A single URL with no pass is most likely a URL
@@ -140,7 +140,7 @@ func IsSingleWithPass(ec *EntreeCheck) bool {
 //   - Fetch the page
 //   - Update last_fetch in guestbook
 func IsSingleNoPass(ec *EntreeCheck) bool {
-	return ec.Kind == SINGLE_PASS && !ec.HallPass && CheckIfIsInGuestbook(ec)
+	return ec.Kind == SinglePass && !ec.HallPass && CheckIfIsInGuestbook(ec)
 }
 
 func CheckIfIsInGuestbook(ec *EntreeCheck) bool {
@@ -149,9 +149,9 @@ func CheckIfIsInGuestbook(ec *EntreeCheck) bool {
 	// implementation is for simplicity.
 	if isInGuestbook(ec) {
 		return CheckIfAfterGuestbookNextFetch(ec)
-	} else {
-		return CheckIfAfterHostNextFetch(ec)
 	}
+
+	return CheckIfAfterHostNextFetch(ec)
 }
 
 // This is if we are re-running a site at a time that
@@ -163,7 +163,7 @@ func CheckIfIsInGuestbook(ec *EntreeCheck) bool {
 //   - Set last_fetch in guestbook
 //   - Reset next_fetch in hosts table after completion
 func IsFullWithPass(ec *EntreeCheck) bool {
-	return ec.Kind == FULL_PASS && ec.HallPass
+	return ec.Kind == FullPass && ec.HallPass
 }
 
 // This is probably a nightly enqueue.
@@ -171,7 +171,7 @@ func IsFullWithPass(ec *EntreeCheck) bool {
 // Possible side-effects:
 //   - None. It runs on what is in the DBs.
 func IsFullNoPass(ec *EntreeCheck) bool {
-	return ec.Kind == FULL_PASS && !ec.HallPass && CheckIfAfterHostNextFetch(ec)
+	return ec.Kind == FullPass && !ec.HallPass && CheckIfAfterHostNextFetch(ec)
 }
 
 // Support functions

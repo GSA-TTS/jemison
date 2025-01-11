@@ -23,12 +23,12 @@ var s3cache sync.Map
 // carry the information so they can load/save.
 //
 //nolint:cyclop,funlen
-func newS3FromBucketName(bucket_name string) S3 {
-	if !env.IsValidBucketName(bucket_name) {
-		log.Fatal("KV INVALID BUCKET NAME ", bucket_name)
+func newS3FromBucketName(bucketName string) S3 {
+	if !env.IsValidBucketName(bucketName) {
+		log.Fatal("KV INVALID BUCKET NAME ", bucketName)
 	}
 
-	if v, ok := s3cache.Load(bucket_name); ok {
+	if v, ok := s3cache.Load(bucketName); ok {
 		cast, ok := v.(S3)
 		if !ok {
 			zap.L().Error("could not cast to s3 struct")
@@ -40,13 +40,13 @@ func newS3FromBucketName(bucket_name string) S3 {
 	s3 := S3{}
 
 	// Grab a reference to our bucket from the config.
-	b, err := env.Env.GetObjectStore(bucket_name)
+	b, err := env.Env.GetObjectStore(bucketName)
 	if err != nil {
-		zap.L().Error("could not get bucket from config", zap.String("bucket_name", bucket_name))
+		zap.L().Error("could not get bucket from config", zap.String("bucket_name", bucketName))
 		os.Exit(1)
 	}
 
-	if DEBUG_S3 {
+	if DebugS3 {
 		zap.L().Debug("got reference to bucket from vcap",
 			zap.String("name", b.Name),
 			zap.String("bucket", b.CredentialString("bucket")),
@@ -80,25 +80,25 @@ func newS3FromBucketName(bucket_name string) S3 {
 	found, err := minioClient.BucketExists(ctx, s3.Bucket.CredentialString("bucket"))
 	if err != nil {
 		zap.L().Fatal("could not check if bucket exists",
-			zap.String("bucket_name", bucket_name),
+			zap.String("bucket_name", bucketName),
 			zap.String("err", err.Error()))
 	}
 
 	if found {
-		if DEBUG_S3 {
+		if DebugS3 {
 			zap.L().Debug("pre-existing bucket in S3",
-				zap.String("bucket_name", bucket_name))
+				zap.String("bucket_name", bucketName))
 		}
 		// Make sure to insert the metadata into the sync.Map
 		// when we find a bucket that already exists.
 		// buckets.Store(bucket_name, s3)
-		s3cache.Store(bucket_name, s3)
+		s3cache.Store(bucketName, s3)
 
 		return s3
 	}
 
 	if env.IsContainerEnv() {
-		log.Println("KV creating new bucket ", bucket_name)
+		log.Println("KV creating new bucket ", bucketName)
 		// Try and make the bucket; if we're local, this is necessary.
 		ctx := context.Background()
 		err = minioClient.MakeBucket(
@@ -108,11 +108,11 @@ func newS3FromBucketName(bucket_name string) S3 {
 
 		if err != nil && !strings.Contains(err.Error(), "succeeded") {
 			log.Println(err)
-			log.Fatal("KV could not create bucket ", bucket_name)
+			log.Fatal("KV could not create bucket ", bucketName)
 		}
 	} // Skip container creation in CF
 
-	s3cache.Store(bucket_name, s3)
+	s3cache.Store(bucketName, s3)
 
 	return s3
 }
@@ -126,11 +126,11 @@ func containsAll(target string, pieces []string) bool {
 	return allExist
 }
 
-const BACKUOFF_MS = 50
+const BackoffMillis = 50
 
-const BACKOFF_OFFSET = 25
+const BackoffOffset = 25
 
-func store(s3 *S3, destination_key string, size int64, reader io.Reader, mime_type string) error {
+func store(s3 *S3, destinationKey string, size int64, reader io.Reader, mimeType string) error {
 	trying := true
 	backoff := 50
 
@@ -139,11 +139,11 @@ func store(s3 *S3, destination_key string, size int64, reader io.Reader, mime_ty
 		_, err := s3.MinioClient.PutObject(
 			ctx,
 			s3.Bucket.CredentialString("bucket"),
-			destination_key,
+			destinationKey,
 			reader,
 			size,
 			minio.PutObjectOptions{
-				ContentType: mime_type,
+				ContentType: mimeType,
 				// This seems to set the *minimum* partsize for multipart uploads.
 				// Which... makes writing JSON objects impossible.
 				// PartSize:    5000000
@@ -152,28 +152,30 @@ func store(s3 *S3, destination_key string, size int64, reader io.Reader, mime_ty
 		// We might be going too fast.
 		if err != nil {
 			zap.L().Warn("S3JSON could not PUT object",
-				zap.String("destination_key", destination_key),
+				zap.String("destination_key", destinationKey),
 				zap.String("error", err.Error()))
 
 			// Resource requested is unwritable, please reduce your request rate
 			if containsAll(err.Error(), []string{"reduce", "rate"}) || containsAll(err.Error(), []string{"not", "store"}) {
 				zap.L().Warn("reducing request rate")
 				//nolint:gosec
-				sleepyTime := time.Duration((rand.IntN(BACKUOFF_MS) + backoff) * int(time.Millisecond))
+				sleepyTime := time.Duration((rand.IntN(BackoffMillis) + backoff) * int(time.Millisecond))
 
-				backoff += rand.IntN(BACKUOFF_MS) + BACKOFF_OFFSET
+				//nolint:gosec
+				backoff += rand.IntN(BackoffMillis) + BackoffOffset
 
 				time.Sleep(sleepyTime)
 
 				continue
-			} else {
-				zap.L().Error("s3 storage error", zap.String("err", err.Error()))
-
-				return err
 			}
-		} else {
-			trying = false
+
+			zap.L().Error("s3 storage error", zap.String("err", err.Error()))
+
+			//nolint:wrapcheck
+			return err
 		}
+
+		trying = false
 	}
 
 	return nil

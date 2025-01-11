@@ -20,7 +20,7 @@ import (
 // !fullCrawl & !pass: check
 // !fullCrawl & pass: fetch the page now.
 */
-func (w *EntreeWorker) Work(ctx context.Context, job *river.Job[common.EntreeArgs]) error {
+func (w *EntreeWorker) Work(_ context.Context, job *river.Job[common.EntreeArgs]) error {
 	var kind string
 	if job.Args.FullCrawl {
 		kind = "full"

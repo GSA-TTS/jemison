@@ -37,7 +37,7 @@ type ExtractArgs struct {
 	Scheme      string `json:"scheme"`
 	Host        string `json:"host"`
 	Path        string `json:"path"`
-	GuestbookId int64  `json:"gb_id"`
+	GuestbookID int64  `json:"gb_id"`
 }
 
 func (ExtractArgs) Kind() string {
@@ -58,7 +58,7 @@ type PackArgs struct {
 	Scheme      string `json:"scheme"`
 	Host        string `json:"host"`
 	Path        string `json:"path"`
-	GuestbookId int64  `json:"gb_id"`
+	GuestbookID int64  `json:"gb_id"`
 }
 
 func (PackArgs) Kind() string {
@@ -83,7 +83,7 @@ func (WalkArgs) Kind() string {
 	return "walk"
 }
 
-type HttpResponse func(w http.ResponseWriter, r *http.Request)
+type HTTPResponse func(w http.ResponseWriter, r *http.Request)
 
 // VALIDATOR TYPES.
 var ValidateFetchQueue = "validate_fetch"

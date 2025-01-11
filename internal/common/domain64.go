@@ -41,6 +41,7 @@ func D64HexToDec(h string) int64 {
 			zap.String("Domain64", h))
 	}
 
+	//nolint:gosec
 	return int64(value)
 }
 

@@ -1,8 +1,10 @@
+//nolint:gosec
 package main
 
 import (
 	"bufio"
 	"crypto/sha1"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -23,7 +25,7 @@ import (
 // But, it is not likely something we want to change.
 const CHUNKSIZE = 4 * 1024
 
-func host_and_path(job *river.Job[common.FetchArgs]) string {
+func hostAndPath(job *river.Job[common.FetchArgs]) string {
 	var u url.URL
 	u.Scheme = job.Args.Scheme
 	u.Host = job.Args.Host
@@ -52,7 +54,7 @@ func chunkwiseSHA1(filename string) []byte {
 		bytesRead += n
 
 		if err != nil {
-			if err != io.EOF {
+			if !errors.Is(err, io.EOF) {
 				zap.L().Error("chunk error reading")
 			}
 
@@ -72,7 +74,7 @@ func chunkwiseSHA1(filename string) []byte {
 	return h.Sum(nil)
 }
 
-func getUrlToFile(u url.URL) (string, int64, []byte, error) {
+func getURLToFile(u url.URL) (string, int64, []byte, error) {
 	getResponse, err := RetryClient.Get(u.String())
 	if err != nil {
 		zap.L().Error("cannot GET content",
@@ -120,10 +122,10 @@ func getUrlToFile(u url.URL) (string, int64, []byte, error) {
 	return temporaryFilename, bytesRead, theSHA, nil
 }
 
-const TOO_SHORT = 20
+const TooShort = 20
 
 //nolint:cyclop,funlen
-func fetch_page_content(job *river.Job[common.FetchArgs]) (
+func fetchPageContent(job *river.Job[common.FetchArgs]) (
 	map[string]string,
 	error,
 ) {
@@ -139,6 +141,8 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (
 		return nil, err
 	}
 
+	defer headResp.Body.Close()
+
 	// Get a clean mime type right away
 	contentType := util.CleanMimeType(headResp.Header.Get("content-type"))
 	log.Debug("checking HEAD MIME type", zap.String("content-type", contentType))
@@ -150,12 +154,10 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (
 	}
 
 	// Make sure we don't fetch things that are too big.
-	size_string := headResp.Header.Get("content-length")
+	sizeString := headResp.Header.Get("content-length")
 
-	size, err := strconv.Atoi(size_string)
-	if err != nil {
-		// Could not extract a size header...
-	} else {
+	size, err := strconv.Atoi(sizeString)
+	if err == nil {
 		if int64(size) > MaxFilesize {
 			return nil, fmt.Errorf(
 				common.FileTooLargeToFetch.String()+
@@ -164,7 +166,7 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (
 	}
 
 	// Write the raw content to a file.
-	tempFilename, bytesRead, theSHA, err := getUrlToFile(u)
+	tempFilename, bytesRead, theSHA, err := getURLToFile(u)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +189,7 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (
 	}
 
 	// Don't bother in case it came in at zero length
-	if bytesRead < TOO_SHORT {
+	if bytesRead < TooShort {
 		return nil, fmt.Errorf(
 			common.FileTooSmallToProcess.String()+
 				" file is too small: %d %s%s", bytesRead, job.Args.Host, job.Args.Path)

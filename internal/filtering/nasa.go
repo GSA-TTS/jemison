@@ -7,7 +7,7 @@ import (
 )
 
 // We compare against the host, so leave off the scheme.
-var nasa string = `.*nasa.gov`
+var nasa = `.*nasa.gov`
 
 func hasRightHere(u *url.URL) error {
 	match, _ := regexp.MatchString("right.*?here", u.String())

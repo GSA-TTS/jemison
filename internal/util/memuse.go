@@ -19,8 +19,8 @@ func PrintMemUsage() {
 	fmt.Printf("\tNumGC = %v\n", m.NumGC)
 }
 
-const BYTES_PER_SI = 1024
+const BytesPerSi = 1024
 
 func bToMb(b uint64) uint64 {
-	return ((b / BYTES_PER_SI) / BYTES_PER_SI)
+	return ((b / BytesPerSi) / BytesPerSi)
 }
