@@ -3,11 +3,11 @@
 version: 2.1
 
 commands:
-  common-install:
+  apt-packages:
     description: Performs a common install in each job
     steps:
       - run:
-          name: "common installs"
+          name: "common apt packages"
           command: |
             sudo apt-get update
             sudo apt-get -y install build-essential \
@@ -18,17 +18,22 @@ commands:
               software-properties-common \
               tree \
               wget
-  install-go-utilities:
-    description: Installs the golang utilities
+
+  install-linter:
+    description: Installs the golangci linter
     parameters:
-      version: 
+      linter-version: 
         default: 1.63.4
         type: string
     steps:
       - run:
           name: "install golangci-lint"
           command: |
-            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v<< parameters.version >>
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v<< parameters.linter-version >>
+
+  install-go-utilities:
+    description: Installs the golang utilities
+    steps:
       - run: 
           name: "install jsonnet"
           command: |
@@ -50,8 +55,8 @@ jobs:
       - image: cimg/go:1.23.3
     steps:
       - checkout
-      - common-install
-      - install-go-utilities
+      - apt-packages
+      - install-linter
       - run:
           name: "prep the build"
           command: |
@@ -67,7 +72,7 @@ jobs:
     steps:
       # Checkout the code as the first step.
       - checkout
-      - common-install
+      - apt-packages
       - install-go-utilities
       - run: make build
 
