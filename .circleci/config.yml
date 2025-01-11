@@ -49,12 +49,13 @@ commands:
             tar xvzf sqlc_1.27.0_linux_amd64.tar.gz
             chmod 755 sqlc
             sudo mv sqlc /bin/sqlc
-    prep-the-build:
-      description: Generates files required for the build
-      steps:
-        - run:
-          name: "generate sqlc models"
-          command: make generate
+
+  prep-the-build:
+    description: Generates files required for the build
+    steps:
+      - run:
+        name: "generate sqlc models"
+        command: make generate
 jobs:
   lint:
     docker:
