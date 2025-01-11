@@ -27,6 +27,7 @@ func commonCommit(qshp QSHP, ctx context.Context, tx pgx.Tx) {
 		if err != nil {
 			zap.L().Error("cannot roll back commit")
 		}
+
 		zap.L().Fatal("cannot commit insert tx",
 			zap.String("host", qshp.Host),
 			zap.String("path", qshp.Path),
@@ -34,6 +35,7 @@ func commonCommit(qshp QSHP, ctx context.Context, tx pgx.Tx) {
 	}
 }
 
+//nolint:cyclop,funlen
 func Enqueue(ch_qshp <-chan QSHP) {
 	// Can we leave one connection open for the entire life of a
 	// service? Maybe. Maybe not.
@@ -58,7 +60,6 @@ func Enqueue(ch_qshp <-chan QSHP) {
 		}
 
 		switch queue_to_match {
-
 		case "entree":
 			_, err := client.InsertTx(ctx, tx, common.EntreeArgs{
 				Scheme:    qshp.Scheme,
@@ -70,10 +71,10 @@ func Enqueue(ch_qshp <-chan QSHP) {
 			if err != nil {
 				zap.L().Error("cannot insert into queue entree")
 			}
+
 			commonCommit(qshp, ctx, tx)
 
 		case "extract":
-
 			_, err := client.InsertTx(ctx, tx, common.ExtractArgs{
 				Scheme: qshp.Scheme,
 				Host:   qshp.Host,
@@ -94,6 +95,7 @@ func Enqueue(ch_qshp <-chan QSHP) {
 			if err != nil {
 				zap.L().Error("cannot insert into queue fetch")
 			}
+
 			commonCommit(qshp, ctx, tx)
 
 		case "pack":
@@ -105,6 +107,7 @@ func Enqueue(ch_qshp <-chan QSHP) {
 			if err != nil {
 				zap.L().Error("cannot insert into queue pack")
 			}
+
 			commonCommit(qshp, ctx, tx)
 
 		case "serve":
@@ -114,6 +117,7 @@ func Enqueue(ch_qshp <-chan QSHP) {
 			if err != nil {
 				zap.L().Error("cannot insert into queue serve")
 			}
+
 			commonCommit(qshp, ctx, tx)
 
 		case "walk":
@@ -121,6 +125,7 @@ func Enqueue(ch_qshp <-chan QSHP) {
 				zap.L().Error("found non-walk job coming to the walk queue",
 					zap.String("host", qshp.Host), zap.String("path", qshp.Path))
 			}
+
 			_, err := client.InsertTx(ctx, tx, common.WalkArgs{
 				Scheme: qshp.Scheme,
 				Host:   qshp.Host,
@@ -129,6 +134,7 @@ func Enqueue(ch_qshp <-chan QSHP) {
 			if err != nil {
 				zap.L().Error("cannot insert into queue walk")
 			}
+
 			commonCommit(qshp, ctx, tx)
 
 		default:

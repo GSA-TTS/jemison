@@ -18,12 +18,14 @@ func GetRules() []Rule {
 	rules := make([]Rule, 0)
 	rules = append(rules, GeneralRules()...)
 	rules = append(rules, NasaRules()...)
+
 	return rules
 }
 
 func IsRejectRuleset(u *url.URL, rules []Rule) error {
 	failed := false
 	failedMsg := ""
+
 	var e error
 
 	for _, r := range rules {
@@ -31,15 +33,18 @@ func IsRejectRuleset(u *url.URL, rules []Rule) error {
 		if err != nil {
 			return fmt.Errorf("should not get here: %s", err.Error())
 		}
+
 		if apply {
 			// log.Println("applying", r.Msg)
 			err := r.Reject(u)
 			if err != nil {
 				zap.L().Debug("reject based on rule",
 					zap.String("msg", r.Msg))
+
 				failed = true
 				failedMsg = r.Msg
 				e = err
+
 				break
 			}
 		}
@@ -54,5 +59,6 @@ func IsRejectRuleset(u *url.URL, rules []Rule) error {
 
 func IsReject(u *url.URL) error {
 	rules := GetRules()
+
 	return IsRejectRuleset(u, rules)
 }
