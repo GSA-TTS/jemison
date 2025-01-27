@@ -1,13 +1,4 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/configuration-reference
 version: 2.1
-
-environment:
-  # # Define cloud.gov deployment credentials as environment variables
-  # CLOUD_GOV_USERNAME: "${CLOUD_GOV_USERNAME}"
-  # CLOUD_GOV_PASSWORD: "${CLOUD_GOV_PASSWORD}"
-  # CLOUD_GOV_ORG:      "${CLOUD_GOV_ORG}" # sandbox-gsa
-  # CLOUD_GOV_SPACE:    "${CLOUD_GOV_SPACE}" # igor.zaytsev
 
 commands:
   apt-packages:
@@ -60,28 +51,6 @@ commands:
       - run:
           name: "generate sqlc models"
           command: make generate
-  deploy-to-cloud-gov:
-    description: Deploys the application to cloud.gov
-    steps:
-      # - checkout
-      # - run:
-      #     name: "Install cf CLI"
-      #     command: |
-      #       wget -q -O cf-cli.tgz "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github"
-      #       tar -xzf cf-cli.tgz
-      #       sudo mv cf /usr/local/bin/cf
-      - run:
-          name: "Install cf CLI"
-          command: |
-            snap install cf --classic
-      - run:
-          name: "Login to cloud.gov"
-          command: |
-            cf login -a https://api.fr.cloud.gov -u $CLOUD_GOV_USERNAME -p $CLOUD_GOV_PASSWORD -o $CLOUD_GOV_ORG -s $CLOUD_GOV_SPACE
-      - run:
-          name: "Push and run the application"
-          command: |
-            cf push -f manifest-dev.yml
 
 jobs:
   lint:
@@ -102,10 +71,57 @@ jobs:
     docker:
       - image: cimg/go:1.23.3
     steps:
-      # Checkout the code as the first step.
       - checkout
       - apt-packages
       - install-go-utilities
       - run: make build
 
-  deploy
+  deploy-to-cloud-gov:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: "Install Cloud Foundry CLI"
+          command: |
+            wget -q -O cf-cli.tgz "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github"
+            tar -xzf cf-cli.tgz
+            sudo mv cf /usr/local/bin/cf
+      - run:
+          name: "Authenticate to Cloud.gov"
+          command: |
+            cf api https://api.fr.cloud.gov
+            cf auth "$CLOUD_GOV_USERNAME" "$CLOUD_GOV_PASSWORD"
+      - run:
+          name: "Target the correct org and space"
+          command: cf target -o "$CLOUD_GOV_ORG" -s "$CLOUD_GOV_SPACE"
+      - run:
+          name: "Deploy to Cloud.gov"
+          command: cf push -f manifest-dev.yml
+
+  local-docker-run:
+    docker:
+      - image: cimg/base:stable
+      - image: docker:24.0.5
+        name: docker
+    steps:
+      - setup_remote_docker:
+          version: 24.0.5
+      - checkout
+      - run:
+          name: "Build Docker Images"
+          command: make docker
+      - run:
+          name: "Run Application Locally (Docker Compose)"
+          command: make up
+
+workflows:
+  build-and-deploy:
+    jobs:
+      - lint
+      - setup-and-build:
+          requires: [ lint ]
+      - local-docker-run:
+          requires: [ setup-and-build ]
+      - deploy-to-cloud-gov:
+          requires: [ setup-and-build ]

@@ -1,0 +1,21 @@
+applications:
+- name: jemison-dev
+  buildpacks:
+    - go_buildpack
+    # TODO: add "docker" and "make" buildpacks?
+  memory: 2G
+  no-route: true
+  path: ./
+  timeout: 300
+  health-check-type: process
+  env:
+    ENV: DEV
+  services:
+  - jemison-search-db
+  - jemison-work-db
+  - jemison-queues-db
+  - fetch
+  - extract
+  - serve
+
+  command: make docker && make up # OR: $go init ... && go run ...
