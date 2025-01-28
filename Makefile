@@ -38,8 +38,8 @@ build: generate
 	cd cmd/pack ; make build
 	echo "build serve"
 	cd cmd/serve ; make build
-	# echo "build validate"
-	# cd cmd/validate ; make build
+	echo "build validate"
+	cd cmd/validate ; make build
 	echo "build walk"
 	cd cmd/walk ; make build
 
