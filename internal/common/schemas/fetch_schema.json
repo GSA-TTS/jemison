@@ -7,7 +7,9 @@
       "properties": {
         "id": { "type": "string" },
         "source": { "type": "string" },
-        "payload": { "type": "string" }
+        "payload": { "type": "string" },
+        "url": { "type": "string" },
+        "count": { "type": "integer" }
       },
       "required": ["id", "source", "payload"]
     }

@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"math"
 	"net/url"
@@ -21,6 +22,7 @@ import (
 	"github.com/GSA-TTS/jemison/internal/postgres/work_db"
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/GSA-TTS/jemison/internal/util"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
@@ -312,6 +314,43 @@ func (w *FetchWorker) Work(_ context.Context, job *river.Job[common.FetchArgs]) 
 		Host:   job.Args.Host,
 		Path:   job.Args.Path,
 	}
+
+	// Generate UUID
+	id := uuid.New().String()
+
+	// Create data to send to the `collect` service
+	collectData := map[string]interface{}{
+		"data": map[string]interface{}{
+			"id":      id,
+			"source":  "fetch",
+			"payload": "default-payload",
+			"url":     hostAndPath(job),  // Full URL being fetched
+			"count":   fetchCount.Load(), // Total count of fetched URLs
+		},
+	}
+
+	// Marshal the data to JSON format
+	collectJSON, err := json.Marshal(collectData)
+	if err != nil {
+		// Wrap the error with additional context
+		wrappedErr := fmt.Errorf("failed to marshal collect data to JSON: %w", err)
+		zap.L().Error(wrappedErr.Error(), zap.Error(err))
+
+		return wrappedErr
+	}
+
+	// Enqueue the data to the `collect` queue
+	ChQSHP <- queueing.QSHP{
+		Queue:   "collect",
+		Scheme:  job.Args.Scheme,
+		Host:    job.Args.Host,
+		Path:    job.Args.Path,
+		RawData: string(collectJSON), // Include data for S3 logging
+	}
+
+	zap.L().Info("Logged URL to collect service",
+		zap.String("url", hostAndPath(job)),
+		zap.Int64("total_count", fetchCount.Load()))
 
 	return nil
 }

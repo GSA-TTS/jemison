@@ -67,15 +67,23 @@ func ensureSchemasInitialized() error {
 func deserializeJSON(jsonString string) (map[string]interface{}, error) {
 	var jsonData map[string]interface{}
 
+	// Unmarshal the JSON data
 	if err := json.Unmarshal([]byte(jsonString), &jsonData); err != nil {
 		zap.L().Error("failed to unmarshal JSON", zap.Error(err))
 
 		return nil, fmt.Errorf("deserializeJSON: failed to unmarshal input JSON: %w", err)
 	}
 
-	// Pull in IsFull and hallpass
-	isFull, _ := jsonData["IsFull"].(bool)
-	hallPass, _ := jsonData["hallpass"].(bool)
+	// Safely check and retrieve optional fields
+	isFull := false
+	if v, ok := jsonData["IsFull"].(bool); ok {
+		isFull = v
+	}
+
+	hallPass := false
+	if v, ok := jsonData["hallpass"].(bool); ok {
+		hallPass = v
+	}
 
 	zap.L().Debug("deserialized JSON attributes",
 		zap.Bool("isFull", isFull),
@@ -86,6 +94,9 @@ func deserializeJSON(jsonString string) (map[string]interface{}, error) {
 }
 
 func selectSchema(jsonData map[string]interface{}) (*gojsonschema.Schema, error) {
+	// Debug log to inspect the incoming JSON
+	zap.L().Debug("selectSchema received JSON", zap.Any("jsonData", jsonData))
+
 	// Extract the "data" object
 	data, ok := jsonData["data"].(map[string]interface{})
 	if !ok {
